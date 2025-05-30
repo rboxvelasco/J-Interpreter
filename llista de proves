@@ -1,0 +1,12 @@
+llista de proves
+
+NB. Assignació i consulta d'escalars
+NB. Assignació de funcions
+NB. Operadors bàsics (+, -, *, %, |, ^) i xifres negatives
+NB. Operacions conjuntes. Precedència per la dreta.
+
+NB. mod2 =: 2 | ]
+NB. square =: *
+NB. x =: 3
+NB. mod2 x
+NB. square x

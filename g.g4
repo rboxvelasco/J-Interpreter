@@ -10,27 +10,30 @@ stat
     ;
 
 expr
-    : atom (op expr)?  # operacio
+    : atom (op expr)?   # operacio
     ;
 
 atom
-    : NUM              # numero
-    | ID               # variable
-    | '(' expr ')'     # parenExpr
-    
+    //: NUM               # numero
+    : ID                # variable
+    | '(' expr ')'      # parenExpr
+    | list              # llistaNumeros
+    ;
+
+list
+    : NUM (NUM)*  # llista
     ;
 
 op
-    : '+'              # suma
-    | '-'              # resta
-    | '*'              # multiplicacio
-    | '%'              # divisio
-    | '|'              # modul
-    | '^'              # potencia
+    : '+'               # suma
+    | '-'               # resta
+    | '*'               # multiplicacio
+    | '%'               # divisio
+    | '|'               # modul
+    | '^'               # potencia
     ;
 
 COMMENT : 'NB.' ~[\r\n]* -> skip ;
-NUM      : '_'? [0-9]+ ;
-
-ID       : [a-zA-Z_][a-zA-Z_0-9]* ;
-WS       : [ \t\r\n]+ -> skip ;
+NUM     : '_'? [0-9]+ ;
+ID      : [a-zA-Z_][a-zA-Z_0-9]* ;
+WS      : [ \t\r\n]+-> skip ;
