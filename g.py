@@ -31,57 +31,46 @@ class ExecVisitor(gVisitor):
     def formatResult(self, value):
         if isinstance(value, np.ndarray):
             return ' '.join(self.formatResult(x) for x in value)
-        if isinstance(value, int):
+        else:
             return f"_{abs(value)}" if value < 0 else str(value)
         return str(value)
 
     # Expressió binària dreta
     def visitOperacio(self, ctx: gParser.OperacioContext):
-        left = self.visit(ctx.atom())
-        if ctx.op() is None:
-            return left
-        op = ctx.op().getText()
-        right = self.visit(ctx.expr())
+        # Collect all atoms and operators
+        atoms = [self.visit(atom) for atom in ctx.atom()]
+        ops = [op.getText() for op in ctx.op()]
         
-        # Case 1: Both scalars
-        if not isinstance(left, np.ndarray) and not isinstance(right, np.ndarray):
-            if op == '+':      return left + right
-            elif op == '-':    return left - right
-            elif op == '*':    return left * right
-            elif op == '%':    return int(left / right)
-            elif op == '|':    return right % left
-            elif op == '^':    return left ** right
+        # If no operators, return the single atom
+        if not ops:
+            return atoms[0]
+        
+        # Evaluate right-to-left
+        result = atoms[-1]
+        for i in range(len(ops) - 1, -1, -1):
+            left = atoms[i]
+            right = result
+            op = ops[i]
+            
+            # Handle array shapes
+            if left.shape != right.shape:
+                if left.shape == (1,):
+                    left = np.repeat(left, len(right))
+                elif right.shape == (1,):
+                    right = np.repeat(right, len(left))
+                else:
+                    raise Exception("length error")
+            
+            # Apply operation
+            if op == '+':      result = left + right
+            elif op == '-':    result = left - right
+            elif op == '*':    result = left * right
+            elif op == '%':    result = left // right  # Integer division
+            elif op == '|':    result = right % left  # J's | is right % left
+            elif op == '^':    result = left ** right
             else: raise Exception(f"Operador no reconegut: {op}")
         
-        # Case 2: One scalar, one list
-        if isinstance(left, np.ndarray) and not isinstance(right, np.ndarray):
-            if op == '+':      return left + right
-            elif op == '-':    return left - right
-            elif op == '*':    return left * right
-            elif op == '%':    return left / right
-            elif op == '|':    return right % left  # Note: J's | is residue (right % left)
-            elif op == '^':    return left ** right
-            else: raise Exception(f"Operador no reconegut: {op}")
-        if not isinstance(left, np.ndarray) and isinstance(right, np.ndarray):
-            if op == '+':      return left + right
-            elif op == '-':    return left - right
-            elif op == '*':    return left * right
-            elif op == '%':    return int(left / right)
-            elif op == '|':    return right % left
-            elif op == '^':    return left ** right
-            else: raise Exception(f"Operador no reconegut: {op}")
-        
-        # Case 3: Both lists
-        if isinstance(left, np.ndarray) and isinstance(right, np.ndarray):
-            if len(left) != len(right):
-                raise Exception("length error")
-            if op == '+':      return left + right
-            elif op == '-':    return left - right
-            elif op == '*':    return left * right
-            elif op == '%':    return left / right
-            elif op == '|':    return right % left
-            elif op == '^':    return left ** right
-            else: raise Exception(f"Operador no reconegut: {op}")
+        return result
 
     def visitLlista(self, ctx: gParser.LlistaContext):
         nums = []

@@ -1,11 +1,11 @@
 NB. Assignacions i consultes a variables
-x =: 1
+x =: 0
 x
 
 y =: 1 2 3
 y
 
-z =: x
+z =: y
 z
 
 NB. Operacions bàsiques amb escalars positius i negatius
@@ -26,7 +26,7 @@ y + z
 
 y + y
 
-1, 2, 3 | 2
-7 | 1, 2, 3
+1 2 3 | 2
+7 | 1 2 3
 
-1, 2 + y
+NB. 1 2 + y
