@@ -1,0 +1,16 @@
+# Variables
+GRAMMAR = g.g4
+
+# Archivos generados
+GENERATED = gLexer.py gParser.py
+
+# Default target
+all: $(GENERATED)
+
+# Compile the grammar
+$(GENERATED): $(GRAMMAR)
+	antlr4 -Dlanguage=Python3 -no-listener -visitor $(GRAMMAR)
+
+# Clean generated files
+clean:
+	rm -f *.interp *.tokens *Lexer.py *Parser.py
