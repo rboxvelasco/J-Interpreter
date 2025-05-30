@@ -1,8 +1,10 @@
+import sys
+import numpy as np
+
 from antlr4 import *
 from gLexer import gLexer
 from gParser import gParser
 from gVisitor import gVisitor
-import numpy as np
 
 class ExecVisitor(gVisitor):
     def __init__(self):
@@ -102,9 +104,6 @@ class ExecVisitor(gVisitor):
             return -int(text[1:])
         return int(text)
 
-    #def visitNumero(self, ctx: gParser.NumeroContext):
-        #return self.parseNum(ctx.NUM().getText())
-
     def visitVariable(self, ctx: gParser.VariableContext):
         name = ctx.ID().getText()
         if name in self.vars:
@@ -144,43 +143,28 @@ class ExecVisitor(gVisitor):
         print(self.formatResult(result))
         return result
 
-if __name__ == '__main__':
-    import sys
-    executor = ExecVisitor()
+def process_input(data, executor):
+    input_stream = InputStream(data + '\n')
+    lexer = gLexer(input_stream)
+    tokens = CommonTokenStream(lexer)
+    parser = gParser(tokens)
+    return executor.visit(parser.root())
 
+if __name__ == '__main__':
+    executor = ExecVisitor()
     if len(sys.argv) > 1:
-        # If a file is provided as an argument, process it as before
-        data = open(sys.argv[1], encoding='utf-8').read()
-        input_stream = InputStream(data)
-        lexer = gLexer(input_stream)
-        tokens = CommonTokenStream(lexer)
-        parser = gParser(tokens)
-        tree = parser.root()
-        executor.visit(tree)
+        with open(sys.argv[1], encoding='utf-8') as f:
+            process_input(f.read(), executor)
     else:
-        # Interactive REPL mode
         print("Interactive mode. Enter expressions, or press Ctrl+D/Ctrl+C to exit.")
         while True:
             try:
-                # Display prompt and read input
                 sys.stdout.write('> ')
                 sys.stdout.flush()
                 line = input()
-                if not line.strip():
-                    continue  # Skip empty lines
-
-                # Process the input line
-                input_stream = InputStream(line + '\n')  # Add newline for proper parsing
-                lexer = gLexer(input_stream)
-                tokens = CommonTokenStream(lexer)
-                parser = gParser(tokens)
-                tree = parser.root()
-                executor.visit(tree)
-
-            except EOFError:
-                print("\nExiting...")
-                break
-            except KeyboardInterrupt:
+                if line.strip():
+                    process_input(line, executor)
+            except (EOFError, KeyboardInterrupt):
                 print("\nExiting...")
                 break
             except Exception as e:
