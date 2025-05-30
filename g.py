@@ -17,7 +17,13 @@ class ExecVisitor(gVisitor):
             '|': lambda x, y: y % x,
             '^': lambda x, y: x ** y,
             ',': lambda x, y: np.concatenate((x, y)),
-            '{': self._index_op
+            '{': self._index_op,
+            '>': lambda x, y: (x > y).astype(int),
+            '<': lambda x, y: (x < y).astype(int),
+            '>=': lambda x, y: (x >= y).astype(int),
+            '<=': lambda x, y: (x <= y).astype(int),
+            '=': lambda x, y: (x == y).astype(int),
+            '<>': lambda x, y: (x != y).astype(int)
         }
 
     # Controla la indexació
