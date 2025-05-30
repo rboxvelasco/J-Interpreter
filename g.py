@@ -9,110 +9,92 @@ from gVisitor import gVisitor
 class ExecVisitor(gVisitor):
     def __init__(self):
         self.vars = {}
+        self.op_map = {
+            '+': lambda x, y: x + y,
+            '-': lambda x, y: x - y,
+            '*': lambda x, y: x * y,
+            '%': lambda x, y: x // y,
+            '|': lambda x, y: y % x,
+            '^': lambda x, y: x ** y,
+            ',': lambda x, y: np.concatenate((x, y)),
+            '{': self._index_op
+        }
+
+    # Controla la indexació
+    def _index_op(self, indices, array):
+        if array.ndim != 1:
+            raise ValueError("Indexing target must be a 1D array")
+        if not np.all((indices >= 0) & (indices < len(array))):
+            raise ValueError("Index out of bounds")
+        return array[indices.astype(int)]
+
+    # Funció auxiliar que transforma escalars en arrays
+    def _to_array(self, value):
+        return np.atleast_1d(value)
+
+    # Asegura mides compatibles
+    def _ensure_compatible_shapes(self, left, right, op):
+        left, right = self._to_array(left), self._to_array(right)
+        if op in {',', '{'}:
+            return left, right
+        if left.shape != right.shape:
+            if left.shape == (1,):
+                left = np.repeat(left, len(right))
+            elif right.shape == (1,):
+                right = np.repeat(right, len(left))
+            else:
+                raise ValueError("length error")
+        return left, right
 
     # ROOT: recorre totes les stat, retorna una llista de valors
     def visitRoot(self, ctx: gParser.RootContext):
-        results = []
-        for stmt in ctx.stat():
-            results.append(self.visit(stmt))
-        return results
+        return [self.visit(stmt) for stmt in ctx.stat()]
 
     # Assignació: guarda la variable i retorna el valor
     def visitAssignacio(self, ctx: gParser.AssignacioContext):
         name = ctx.ID().getText()
         value = self.visit(ctx.expr())
-        
-        # If the value is an operator, store it as a function
-        if isinstance(value, str) and value in {'+', '-', '*', '%', '|', '^'}:
-            self.vars[name] = ('function', value)
-        else:
-            self.vars[name] = value
+        self.vars[name] = ('function', value) if isinstance(value, str) and value in self.op_map else value
         return value
 
     # Expressió com a sentència: avaluem i imprimim
     def visitExpressio(self, ctx: gParser.ExpressioContext):
-        value = self.visit(ctx.expr())
-        print(self.formatResult(value))
-        return value
+        result = self.visit(ctx.expr())
+        print(self._format_result(result))
+        return result
 
-    def formatResult(self, value):
+    def _format_result(self, value):
         if isinstance(value, np.ndarray):
-            return ' '.join(self.formatResult(x) for x in value)
-        else:
-            return f"_{abs(value)}" if value < 0 else str(value)
-        return str(value)
+            return ' '.join(self._format_result(x) for x in value)
+        return f"_{abs(value)}" if value < 0 else str(value)
 
     # Expressió binària dreta
     def visitOperacio(self, ctx: gParser.OperacioContext):
-        # Collect all atoms and operators
         atoms = [self.visit(atom) for atom in ctx.atom()]
         ops = [op.getText() for op in ctx.op()]
-        
-        # If no operators, return the single atom
         if not ops:
             return atoms[0]
         
-        # Evaluate right-to-left
         result = atoms[-1]
         for i in range(len(ops) - 1, -1, -1):
-            left = atoms[i]
-            right = result
-            op = ops[i]
-            
-            # Ensure operands are arrays
-            left = np.atleast_1d(left)
-            right = np.atleast_1d(right)
-            
-            # Handle array shapes for non-concatenation and non-indexing operations
-            if op not in {',', '{'} and left.shape != right.shape:
-                if left.shape == (1,):
-                    left = np.repeat(left, len(right))
-                elif right.shape == (1,):
-                    right = np.repeat(right, len(left))
-                else:
-                    raise Exception("length error")
-            
-            # Apply operation
-            if op == '+':      result = left + right
-            elif op == '-':    result = left - right
-            elif op == '*':    result = left * right
-            elif op == '%':    result = left // right
-            elif op == '|':    result = right % left
-            elif op == '^':    result = left ** right
-            elif op == ',':    result = np.concatenate((left, right))
-            elif op == '{':
-                # Ensure right is a 1D array
-                if right.ndim != 1:
-                    raise Exception("Indexing target must be a 1D array")
-                # Ensure left contains valid indices
-                if not np.all((left >= 0) & (left < len(right))):
-                    raise Exception("Index out of bounds")
-                result = right[left.astype(int)]
-            else: raise Exception(f"Operador no reconegut: {op}")
-        
+            left, right = self._ensure_compatible_shapes(atoms[i], result, ops[i])
+            result = self.op_map[ops[i]](left, right)
         return result
 
     def visitLlista(self, ctx: gParser.LlistaContext):
-        nums = []
-        for child in ctx.getChildren():
-            if child.getSymbol().type == gParser.NUM:
-                nums.append(self.parseNum(child.getText()))
+        nums = [self._parse_num(child.getText()) for child in ctx.getChildren()
+                if child.getSymbol().type == gParser.NUM]
         return np.array(nums)
 
-    def parseNum(self, text):
-        if text[0] == '_':
-            return -int(text[1:])
-        return int(text)
+    def _parse_num(self, text):
+        return -int(text[1:]) if text[0] == '_' else int(text)
 
     def visitVariable(self, ctx: gParser.VariableContext):
         name = ctx.ID().getText()
-        if name in self.vars:
-            value = self.vars[name]
-            if isinstance(value, tuple) and value[0] == 'function':
-                return value[1]  # Return the operator string for assignments
-            return value
-        else:
-            raise Exception(f"Variable no definida: {name}")
+        if name not in self.vars:
+            raise ValueError(f"Undefined variable: {name}")
+        value = self.vars[name]
+        return value[1] if isinstance(value, tuple) and value[0] == 'function' else value
 
     def visitOperador(self, ctx: gParser.OperadorContext):
         return ctx.op().getText()
@@ -123,24 +105,16 @@ class ExecVisitor(gVisitor):
     # (de moment no suportem funcions)
     def visitCridaFuncio(self, ctx: gParser.CridaFuncioContext):
         name = ctx.ID().getText()
-        arg = self.visit(ctx.expr())
-        
         if name not in self.vars or self.vars[name][0] != 'function':
-            raise Exception(f"No és una funció: {name}")
+            raise ValueError(f"Not a function: {name}")
         
         op = self.vars[name][1]
-        arg = np.atleast_1d(arg)  # Ensure argument is an array
+        if op not in self.op_map:
+            raise ValueError(f"Unsupported operator for function: {op}")
         
-        # Apply the operator monadically (x op x)
-        if op == '+':      result = arg + arg
-        elif op == '-':    result = arg - arg
-        elif op == '*':    result = arg * arg
-        elif op == '%':    result = arg // arg
-        elif op == '|':    result = arg % arg
-        elif op == '^':    result = arg ** arg
-        else: raise Exception(f"Operador no suportat per funcions: {op}")
-        
-        print(self.formatResult(result))
+        arg = self._to_array(self.visit(ctx.expr()))
+        result = self.op_map[op](arg, arg)
+        print(self._format_result(result))
         return result
 
 def process_input(data, executor):
