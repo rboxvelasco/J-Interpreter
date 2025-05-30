@@ -19,7 +19,12 @@ class ExecVisitor(gVisitor):
     def visitAssignacio(self, ctx: gParser.AssignacioContext):
         name = ctx.ID().getText()
         value = self.visit(ctx.expr())
-        self.vars[name] = value
+        
+        # If the value is an operator, store it as a function
+        if isinstance(value, str) and value in {'+', '-', '*', '%', '|', '^'}:
+            self.vars[name] = ('function', value)
+        else:
+            self.vars[name] = value
         return value
 
     # Expressió com a sentència: avaluem i imprimim
@@ -52,8 +57,12 @@ class ExecVisitor(gVisitor):
             right = result
             op = ops[i]
             
-            # Handle array shapes
-            if left.shape != right.shape:
+            # Ensure operands are arrays
+            left = np.atleast_1d(left)
+            right = np.atleast_1d(right)
+            
+            # Handle array shapes for non-concatenation and non-indexing operations
+            if op not in {',', '{'} and left.shape != right.shape:
                 if left.shape == (1,):
                     left = np.repeat(left, len(right))
                 elif right.shape == (1,):
@@ -65,9 +74,18 @@ class ExecVisitor(gVisitor):
             if op == '+':      result = left + right
             elif op == '-':    result = left - right
             elif op == '*':    result = left * right
-            elif op == '%':    result = left // right  # Integer division
-            elif op == '|':    result = right % left  # J's | is right % left
+            elif op == '%':    result = left // right
+            elif op == '|':    result = right % left
             elif op == '^':    result = left ** right
+            elif op == ',':    result = np.concatenate((left, right))
+            elif op == '{':
+                # Ensure right is a 1D array
+                if right.ndim != 1:
+                    raise Exception("Indexing target must be a 1D array")
+                # Ensure left contains valid indices
+                if not np.all((left >= 0) & (left < len(right))):
+                    raise Exception("Index out of bounds")
+                result = right[left.astype(int)]
             else: raise Exception(f"Operador no reconegut: {op}")
         
         return result
@@ -90,16 +108,41 @@ class ExecVisitor(gVisitor):
     def visitVariable(self, ctx: gParser.VariableContext):
         name = ctx.ID().getText()
         if name in self.vars:
-            return self.vars[name]
+            value = self.vars[name]
+            if isinstance(value, tuple) and value[0] == 'function':
+                return value[1]  # Return the operator string for assignments
+            return value
         else:
             raise Exception(f"Variable no definida: {name}")
+
+    def visitOperador(self, ctx: gParser.OperadorContext):
+        return ctx.op().getText()
 
     def visitParenExpr(self, ctx: gParser.ParenExprContext):
         return self.visit(ctx.expr())
 
     # (de moment no suportem funcions)
-    def visitCridaFuncio(self, ctx):
-        raise Exception("Les funcions no estan implementades encara.")
+    def visitCridaFuncio(self, ctx: gParser.CridaFuncioContext):
+        name = ctx.ID().getText()
+        arg = self.visit(ctx.expr())
+        
+        if name not in self.vars or self.vars[name][0] != 'function':
+            raise Exception(f"No és una funció: {name}")
+        
+        op = self.vars[name][1]
+        arg = np.atleast_1d(arg)  # Ensure argument is an array
+        
+        # Apply the operator monadically (x op x)
+        if op == '+':      result = arg + arg
+        elif op == '-':    result = arg - arg
+        elif op == '*':    result = arg * arg
+        elif op == '%':    result = arg // arg
+        elif op == '|':    result = arg % arg
+        elif op == '^':    result = arg ** arg
+        else: raise Exception(f"Operador no suportat per funcions: {op}")
+        
+        print(self.formatResult(result))
+        return result
 
 if __name__ == '__main__':
     import sys

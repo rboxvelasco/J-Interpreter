@@ -6,6 +6,7 @@ root
 
 stat
     : ID '=:' expr      # assignacio
+    | ID expr           # cridaFuncio
     | expr              # expressio
     ;
 
@@ -15,6 +16,8 @@ expr
 
 atom
     : ID                # variable
+    | op                # operador
+    | 'i.'              # funcioI
     | '(' expr ')'      # parenExpr
     | list              # llistaNumeros
     ;
@@ -24,7 +27,9 @@ list
     ;
 
 op
-    : '+' | '-' | '*' | '%' | '|' | '^'
+    : '+' | '-' | '*' | '%' | '|' | '^' 
+    | '<' | '>' | '>=' | '<=' | '=' | '<>'
+    | ',' | '{'
     ;
 
 COMMENT : 'NB.' ~[\r\n]* -> skip ;
