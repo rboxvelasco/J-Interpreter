@@ -13,6 +13,7 @@ stat
 
 expr
     : unOp? atom (binOp atom)*   # operacio
+    | binOp '/' atom             # fold
     | 'i.' expr                  # generador
     ;
 

@@ -1,5 +1,6 @@
 import sys
 import numpy as np
+from functools import reduce
 
 from antlr4 import *
 from gLexer import gLexer
@@ -89,6 +90,16 @@ class ExecVisitor(gVisitor):
             result = np.array(result)
         return result
 
+    def get_op_func(self, bin_op_text):
+        base_op = bin_op_text.rstrip('~')  # Quita los '~' del final
+        num_flips = len(bin_op_text) - len(base_op)  # Cuenta los '~'
+        if base_op not in self.op_map:
+            raise ValueError(f"Unsupported operator: {base_op}")
+        op_func = self.op_map[base_op]
+        if num_flips % 2 == 1:  # Si hay un número impar de '~', invertir operandos
+            op_func = lambda x, y: op_func(y, x)
+        return op_func
+    
     # ROOT: recorre totes les stat, retorna una llista de valors
     def visitRoot(self, ctx: gParser.RootContext):
         return [self.visit(stmt) for stmt in ctx.stat()]
@@ -207,6 +218,23 @@ class ExecVisitor(gVisitor):
                     raise ValueError(f"Unsupported unary operator: {base_un_op}")
 
         return result
+
+    def visitFold(self, ctx: gParser.FoldContext):
+        bin_op_text = ctx.binOp().getText()  # e.g., '+', ', ~'
+        array = self.visit(ctx.atom())       # Evalúa el átomo (e.g., lista '1 2 3')
+        array = self._to_array(array)        # Convierte a array si no lo es
+        
+        if array.size == 0:
+            raise ValueError("Fold on empty array")
+        
+        # Convertir array 1D de escalares en lista de arrays de un elemento
+        if array.ndim == 1:
+            array_list = [np.array([x]) for x in array]
+        else:
+            array_list = array
+        
+        op_func = self.get_op_func(bin_op_text)
+        return reduce(op_func, array_list)
 
     def visitOperador(self, ctx: gParser.OperadorContext):
         return ctx.getText()  # Devuelve el texto completo, por ejemplo "+~" o "#"
