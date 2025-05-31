@@ -52,6 +52,7 @@ square z
 list =: 0 1 2 3
 
 mod2 =: 2 | ]
+mod2
 m =: mod2 list
 m
 

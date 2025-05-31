@@ -61,17 +61,15 @@ class ExecVisitor(gVisitor):
         name = ctx.ID().getText()
         expr = ctx.expr()
         value = self.visit(expr)
-        
-        # Si el valor es un operador (string en op_map), lo convertimos en una función
         if isinstance(value, str) and value in self.op_map:
-            # Creamos una función que aplica el operador al argumento consigo mismo
             func = lambda y: self.op_map[value](y, y)
-            self.vars[name] = ('function', func)
+            # Almacenamos siempre con la representación textual
+            self.vars[name] = ('function', func, value)
         else:
             self.vars[name] = value
         return value
 
-    # Assignació de funcions: crea una lambda basada en NUM op ]
+    # Assignació de funcions: guarda la funció i la seva representació
     def visitAssignacioFuncio(self, ctx: gParser.AssignacioFuncioContext):
         name = ctx.ID().getText()
         func_def = ctx.funcDef()
@@ -79,10 +77,11 @@ class ExecVisitor(gVisitor):
         op = func_def.op().getText()
         if op not in self.op_map:
             raise ValueError(f"Unsupported operator in function definition: {op}")
-        # Creamos una función lambda con el número fijo y el argumento
+        # Guardem la representació textual, per exemple "2 | ]"
+        func_repr = f"{self._format_result(num)} {op} ]"
         func = lambda y: self.op_map[op](self._to_array(num), self._to_array(y))
-        self.vars[name] = ('function', func)
-        return func
+        self.vars[name] = ('function', func, func_repr)
+        return ('function', func, func_repr)
 
     # Expressió com a sentència: avaluem i imprimim
     def visitExpressio(self, ctx: gParser.ExpressioContext):
@@ -90,14 +89,16 @@ class ExecVisitor(gVisitor):
         print(self._format_result(result))
         return result
 
+    # Formatea el resultat per a la impressió
     def _format_result(self, value):
-        if isinstance(value, np.ndarray):  # Para arrays como [0, 1, 0, 1]
+        if isinstance(value, np.ndarray):
             return ' '.join(self._format_result(x) for x in value)
-        elif callable(value):  # Para funciones
-            return "<function>"
-        elif isinstance(value, int):  # Para enteros
+        elif isinstance(value, tuple) and value[0] == 'function':
+            # Si la tupla tiene un tercer elemento, usarlo; si no, usar una representación genérica
+            return value[2] if len(value) > 2 else "<function>"
+        elif isinstance(value, int):
             return f"_{abs(value)}" if value < 0 else str(value)
-        else:  # Para otros tipos
+        else:
             return str(value)
 
     # Expressió binària dreta
@@ -139,8 +140,7 @@ class ExecVisitor(gVisitor):
         name = ctx.ID().getText()
         if name not in self.vars:
             raise ValueError(f"Undefined variable: {name}")
-        value = self.vars[name]
-        return value[1] if isinstance(value, tuple) and value[0] == 'function' else value
+        return self.vars[name]  # Devolvemos el valor completo (tupla o valor directo)
 
     def visitOperador(self, ctx: gParser.OperadorContext):
         return ctx.op().getText()
