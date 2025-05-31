@@ -25,7 +25,8 @@ class ExecVisitor(gVisitor):
             '<=': lambda x, y: (x <= y).astype(int),
             '=':  lambda x, y: (x == y).astype(int),
             '<>': lambda x, y: (x != y).astype(int),
-            '#':  self._copy_op  # Operador binario '#'
+            '#':  self._copy_op,  # Operador binario '#'
+            '@:': self._compose_op  # Composición de funciones
         }
 
     # Controla la indexació
@@ -36,12 +37,35 @@ class ExecVisitor(gVisitor):
             raise ValueError("Index out of bounds")
         return array[indices.astype(int)]
 
+    def _compose_op(self, left, right):
+        """Compone dos funciones: (left @: right) y"""
+        # Verificar que ambos operandos sean funciones
+        if not (isinstance(left, tuple) and left[0] == 'function'):
+            raise ValueError("Left operand of @: must be a function")
+        if not (isinstance(right, tuple) and right[0] == 'function'):
+            raise ValueError("Right operand of @: must be a function")
+        
+        left_func = left[1]
+        right_func = right[1]
+        left_repr = left[2] if len(left) > 2 else ""
+        right_repr = right[2] if len(right) > 2 else ""
+        
+        # Crear función compuesta: left(right(y))
+        composed_func = lambda y: left_func(right_func(y))
+        composed_repr = f"{left_repr} @: {right_repr}"
+        
+        return ('function', composed_func, composed_repr)
+
     # Funció auxiliar que transforma escalars en arrays
     def _to_array(self, value):
         return np.atleast_1d(value)
 
     # Asegura mides compatibles
     def _ensure_compatible_shapes(self, left, right, op):
+        # Para composición, no convertir a arrays
+        if op == '@:':
+            return left, right
+
         left = self._to_array(left)
         right = self._to_array(right)
         if op in {',', '{', '#'}:  # Operadores que manejan arrays directamente
