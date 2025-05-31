@@ -125,29 +125,50 @@ class ExecVisitor(gVisitor):
     def visitOperacio(self, ctx: gParser.OperacioContext):
         un_op = ctx.unOp()
         atoms = [self.visit(atom) for atom in ctx.atom()]
-        ops = [op.getText() for op in ctx.binOp()]
-        
+        ops = [op.getText() for op in ctx.binOp()]  # Obtenemos el texto completo, incluyendo ~
+
         # Si no hay operadores binarios, tomamos el primer atom
         if not ops:
             result = atoms[0]
         else:
-            # Evaluamos de derecha a izquierda (asociatividad por la derecha)
+            # Evaluamos de derecha a izquierda
             result = atoms[-1]
             for i in range(len(ops) - 1, -1, -1):
-                left, right = self._ensure_compatible_shapes(atoms[i], result, ops[i])
-                result = self.op_map[ops[i]](left, right)
-        
+                op = ops[i]
+                if op.endswith('~'):
+                    base_op = op[:-1]
+                    if base_op not in self.op_map:
+                        raise ValueError(f"Unsupported operator: {base_op}")
+                    # Invertimos los operandos
+                    left = result
+                    right = atoms[i]
+                    left, right = self._ensure_compatible_shapes(left, right, base_op)
+                    result = self.op_map[base_op](left, right)
+                else:
+                    if op not in self.op_map:
+                        raise ValueError(f"Unsupported operator: {op}")
+                    left = atoms[i]
+                    right = result
+                    left, right = self._ensure_compatible_shapes(left, right, op)
+                    result = self.op_map[op](left, right)
+
         # Aplicar operador unario si existe
         if un_op:
             un_op_text = un_op.getText()
-            if un_op_text == ']':
+            if un_op_text in {']', ']~'}:
                 pass  # Identidad
             elif un_op_text == '#':
-                result = len(result)  # Devolver la longitud
+                result = len(self._to_array(result))  # Longitud
+            elif un_op_text == '#~':
+                # Operación reflexiva
+                result = self._copy_op(result, result)
             else:
                 raise ValueError(f"Unsupported unary operator: {un_op_text}")
-        
+
         return result
+
+    def visitOperador(self, ctx: gParser.OperadorContext):
+        return ctx.getText()  # Devuelve el texto completo, por ejemplo "+~" o "#"
 
     def visitLlista(self, ctx: gParser.LlistaContext):
         nums = [self._parse_num(child.getText()) for child in ctx.getChildren()
@@ -162,9 +183,6 @@ class ExecVisitor(gVisitor):
         if name not in self.vars:
             raise ValueError(f"Undefined variable: {name}")
         return self.vars[name]  # Devolvemos el valor completo (tupla o valor directo)
-
-    def visitOperador(self, ctx: gParser.OperadorContext):
-        return ctx.binOp().getText()
 
     def visitParenExpr(self, ctx: gParser.ParenExprContext):
         return self.visit(ctx.expr())

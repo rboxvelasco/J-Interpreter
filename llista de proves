@@ -10,3 +10,10 @@ NB. square =: *
 NB. x =: 3
 NB. mod2 x
 NB. square x
+
+
+
+Caso	                        ¿Qué hace f~ y?
+f binario	                    Aplica f con los argumentos invertidos: y f x
+f unario	                    ❌ Error: no se puede invertir una función unaria
+f ambigua (unaria o binaria)	Aplica versión binaria con y como ambos argumentos: y f y
