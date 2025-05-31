@@ -59,9 +59,30 @@ class ExecVisitor(gVisitor):
     # Assignació: guarda la variable i retorna el valor
     def visitAssignacio(self, ctx: gParser.AssignacioContext):
         name = ctx.ID().getText()
-        value = self.visit(ctx.expr())
-        self.vars[name] = ('function', value) if isinstance(value, str) and value in self.op_map else value
+        expr = ctx.expr()
+        value = self.visit(expr)
+        
+        # Si el valor es un operador (string en op_map), lo convertimos en una función
+        if isinstance(value, str) and value in self.op_map:
+            # Creamos una función que aplica el operador al argumento consigo mismo
+            func = lambda y: self.op_map[value](y, y)
+            self.vars[name] = ('function', func)
+        else:
+            self.vars[name] = value
         return value
+
+    # Assignació de funcions: crea una lambda basada en NUM op ]
+    def visitAssignacioFuncio(self, ctx: gParser.AssignacioFuncioContext):
+        name = ctx.ID().getText()
+        func_def = ctx.funcDef()
+        num = self._parse_num(func_def.NUM().getText())
+        op = func_def.op().getText()
+        if op not in self.op_map:
+            raise ValueError(f"Unsupported operator in function definition: {op}")
+        # Creamos una función lambda con el número fijo y el argumento
+        func = lambda y: self.op_map[op](self._to_array(num), self._to_array(y))
+        self.vars[name] = ('function', func)
+        return func
 
     # Expressió com a sentència: avaluem i imprimim
     def visitExpressio(self, ctx: gParser.ExpressioContext):
@@ -70,21 +91,40 @@ class ExecVisitor(gVisitor):
         return result
 
     def _format_result(self, value):
-        if isinstance(value, np.ndarray):
+        if isinstance(value, np.ndarray):  # Para arrays como [0, 1, 0, 1]
             return ' '.join(self._format_result(x) for x in value)
-        return f"_{abs(value)}" if value < 0 else str(value)
+        elif callable(value):  # Para funciones
+            return "<function>"
+        elif isinstance(value, int):  # Para enteros
+            return f"_{abs(value)}" if value < 0 else str(value)
+        else:  # Para otros tipos
+            return str(value)
 
     # Expressió binària dreta
     def visitOperacio(self, ctx: gParser.OperacioContext):
+        un_op = ctx.unOp()
         atoms = [self.visit(atom) for atom in ctx.atom()]
         ops = [op.getText() for op in ctx.op()]
-        if not ops:
-            return atoms[0]
         
-        result = atoms[-1]
-        for i in range(len(ops) - 1, -1, -1):
-            left, right = self._ensure_compatible_shapes(atoms[i], result, ops[i])
-            result = self.op_map[ops[i]](left, right)
+        # Si no hi ha operadors binaris, només tenim un atom
+        if not ops:
+            result = atoms[0]
+        else:
+            # Avaluem de dreta a esquerra
+            result = atoms[-1]
+            for i in range(len(ops) - 1, -1, -1):
+                left, right = self._ensure_compatible_shapes(atoms[i], result, ops[i])
+                result = self.op_map[ops[i]](left, right)
+        
+        # Si hi ha un operador unari ']'
+        if un_op:
+            un_op_text = un_op.getText()
+            if un_op_text == ']':
+                # Identitat: no fem res, retornem el resultat
+                pass
+            else:
+                raise ValueError(f"Unsupported unary operator: {un_op_text}")
+        
         return result
 
     def visitLlista(self, ctx: gParser.LlistaContext):
@@ -108,20 +148,26 @@ class ExecVisitor(gVisitor):
     def visitParenExpr(self, ctx: gParser.ParenExprContext):
         return self.visit(ctx.expr())
 
+    def visitLlamadaFuncio(self, ctx: gParser.LlamadaFuncioContext):
+        func_name = ctx.ID().getText()
+        arg = self.visit(ctx.expr())
+        if func_name not in self.vars or self.vars[func_name][0] != 'function':
+            raise ValueError(f"Not a function: {func_name}")
+        func = self.vars[func_name][1]
+        return func(arg)
+
     # (de moment no suportem funcions)
     def visitCridaFuncio(self, ctx: gParser.CridaFuncioContext):
         name = ctx.ID().getText()
         if name not in self.vars or self.vars[name][0] != 'function':
             raise ValueError(f"Not a function: {name}")
-        
-        op = self.vars[name][1]
-        if op not in self.op_map:
-            raise ValueError(f"Unsupported operator for function: {op}")
-        
-        arg = self._to_array(self.visit(ctx.expr()))
-        result = self.op_map[op](arg, arg)
+        func = self.vars[name][1]
+        arg = self.visit(ctx.expr())
+        result = func(arg)
         print(self._format_result(result))
         return result
+
+
 
 def process_input(data, executor):
     input_stream = InputStream(data + '\n')
