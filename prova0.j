@@ -89,15 +89,25 @@ i. 3 + 4
 , / 1 2 3
 , ~ / 1 2 3
 
+1 3 5 e. 1 2 3 4
+0 *. 0
+0 *. 1
+1 *. 0
+1 *. 1
+
+0 +. 0
+0 +. 1
+1 +. 0
+1 +. 1
 
 mod2 =: 2 | ]
 eq0 =: 0 = ]
 parell =: eq0 @: mod2
 parell i. 6    NB. resultat: 1 0 1 0 1 0
 
-inc =: 1 + ]
-test =: +/ @: inc @: i.
-test 3    NB. resultat: 6
+NB. inc =: 1 + ]
+NB. test =: +/ @: inc @: i.
+NB. test 3    NB. resultat: 6
 
 NB. 2 # 0 1 2 3
 NB. 0 1 2 3 # 2

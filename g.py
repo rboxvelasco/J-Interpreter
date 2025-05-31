@@ -8,6 +8,10 @@ from gParser import gParser
 from gVisitor import gVisitor
 
 class ExecVisitor(gVisitor):
+
+    # Initializes the visitor with the next elements:
+    #  - vars:   dictionary to store variables and functions
+    #  - op_map: dictionary to store binary operators and its action
     def __init__(self):
         self.vars = {}
         self.op_map = {
@@ -17,25 +21,66 @@ class ExecVisitor(gVisitor):
             '%':  lambda x, y: x // y,
             '|':  lambda x, y: y % x,
             '^':  lambda x, y: x ** y,
-            ',':  lambda x, y: np.concatenate((x, y)),
-            '{':  self._index_op,
             '>':  lambda x, y: (x > y).astype(int),
             '<':  lambda x, y: (x < y).astype(int),
             '>=': lambda x, y: (x >= y).astype(int),
             '<=': lambda x, y: (x <= y).astype(int),
             '=':  lambda x, y: (x == y).astype(int),
             '<>': lambda x, y: (x != y).astype(int),
-            '#':  self._copy_op,  # Operador binario '#'
-            '@:': self._compose_op  # Composición de funciones
+            ',':  lambda x, y: np.concatenate((x, y)),
+            'e.': lambda x, y: np.isin(x, y).astype(int),
+            '*.': lambda x, y: (self._to_array(x) & self._to_array(y)).astype(int),
+            '+.': lambda x, y: (self._to_array(x) | self._to_array(y)).astype(int),
+            '#':  self._copy_op,  # Binary operator, not unary
+            '{':  self._index_op,
+            '@:': self._compose_op
         }
 
-    # Controla la indexació
-    def _index_op(self, indices, array):
-        if array.ndim != 1:
-            raise ValueError("Indexing target must be a 1D array")
-        if not np.all((indices >= 0) & (indices < len(array))):
-            raise ValueError("Index out of bounds")
-        return array[indices.astype(int)]
+    # ROOT: visits every statement and returns a list of values
+    def visitRoot(self, ctx: gParser.RootContext):
+        return [self.visit(stmt) for stmt in ctx.stat()]
+
+    # Evaluates a parenthesized expression
+    def visitParenExpr(self, ctx: gParser.ParenExprContext):
+        return self.visit(ctx.expr())
+
+    # Evaluates an expression
+    def visitExpressio(self, ctx: gParser.ExpressioContext):
+        result = self.visit(ctx.expr())
+        print(self._format_result(result))
+        return result
+
+    # Returns an operator
+    def visitOperador(self, ctx: gParser.OperadorContext):
+        return ctx.getText()
+
+    # Returns the value of a variable
+    def visitVariable(self, ctx: gParser.VariableContext):
+        name = ctx.ID().getText()
+        if name not in self.vars:
+            raise ValueError(f"Undefined variable: {name}")
+        return self.vars[name]
+
+    # Returns an array
+    def visitLlista(self, ctx: gParser.LlistaContext):
+        nums = [self._parse_num(child.getText()) for child in ctx.getChildren()
+                if child.getSymbol().type == gParser.NUM]
+        return np.array(nums)
+
+    # Stores the variable and returns its value
+    def visitAssignacio(self, ctx: gParser.AssignacioContext):
+        name = ctx.ID().getText()
+        value = self.visit(ctx.expr())
+        if isinstance(value, str) and value in self.op_map:
+            func = lambda y: self.op_map[value](y, y)
+            self.vars[name] = ('function', func, value)
+        else:
+            self.vars[name] = value
+        return value
+
+
+
+
 
     def _compose_op(self, left, right):
         """Compone dos funciones: (left @: right) y"""
@@ -56,10 +101,6 @@ class ExecVisitor(gVisitor):
         
         return ('function', composed_func, composed_repr)
 
-    # Funció auxiliar que transforma escalars en arrays
-    def _to_array(self, value):
-        return np.atleast_1d(value)
-
     # Asegura mides compatibles
     def _ensure_compatible_shapes(self, left, right, op):
         # Para composición, no convertir a arrays
@@ -68,7 +109,7 @@ class ExecVisitor(gVisitor):
 
         left = self._to_array(left)
         right = self._to_array(right)
-        if op in {',', '{', '#'}:  # Operadores que manejan arrays directamente
+        if op in {',', '{', '#', 'e.'}:  # Operadores que manejan arrays directamente
             return left, right
         if left.shape != right.shape:
             if left.shape == (1,):
@@ -83,36 +124,23 @@ class ExecVisitor(gVisitor):
         left = self._to_array(left)
         right = self._to_array(right)
         
-        if left.ndim == 0:  # Left es escalar
+        if left.ndim == 0:  # Left is scalar
             n = left.item()
             if not isinstance(n, (int, np.integer)):
                 raise ValueError("Replication count must be an integer")
-            n = max(0, n)  # No permitir repeticiones negativas
-            if right.ndim == 0:  # Right también es escalar
-                x = right.item()
-                result = np.repeat(x, n)
-            else:  # Right es un array
-                result = np.repeat(right, n)
-        elif right.ndim == 0:  # Right es escalar
-            x = right.item()
-            if not np.issubdtype(left.dtype, np.integer):
-                raise ValueError("Replication counts must be integers")
-            result = []
-            for n in left:
-                n = max(0, n)
-                result.extend([x] * n)
-            result = np.array(result)
-        else:  # Ambos son arrays
-            if left.shape != right.shape or left.ndim != 1 or right.ndim != 1:
-                raise ValueError("length error")
-            if not np.issubdtype(left.dtype, np.integer):
-                raise ValueError("Replication counts must be integers")
-            result = []
-            for n, x in zip(left, right):
-                n = max(0, n)
-                result.extend([x] * n)
-            result = np.array(result)
-        return result
+            return np.repeat(right.item() if right.ndim == 0 else right, max(0, n))
+        
+        if not np.issubdtype(left.dtype, np.integer):
+            raise ValueError("Replication counts must be integers")
+        
+        if right.ndim == 0:
+            return np.array([right.item()] * max(0, left.item()) if left.ndim == 0
+                    else [x for n in left for x in [right.item()] * max(0, n)])
+        
+        if left.shape != right.shape or left.ndim != 1 or right.ndim != 1:
+            raise ValueError("length error")
+        
+        return np.array([x for n, x in zip(left, right) for _ in range(max(0, n))])
 
     def get_op_func(self, bin_op_text):
         base_op = bin_op_text.rstrip('~')  # Quita los '~' del final
@@ -124,23 +152,6 @@ class ExecVisitor(gVisitor):
             # Crear una nueva lambda que usa la función original
             return lambda x, y: op_func(y, x)
         return op_func  # Devolver la función original sin cambios
-    
-    # ROOT: recorre totes les stat, retorna una llista de valors
-    def visitRoot(self, ctx: gParser.RootContext):
-        return [self.visit(stmt) for stmt in ctx.stat()]
-
-    # Assignació: guarda la variable i retorna el valor
-    def visitAssignacio(self, ctx: gParser.AssignacioContext):
-        name = ctx.ID().getText()
-        expr = ctx.expr()
-        value = self.visit(expr)
-        if isinstance(value, str) and value in self.op_map:
-            func = lambda y: self.op_map[value](y, y)
-            # Almacenamos siempre con la representación textual
-            self.vars[name] = ('function', func, value)
-        else:
-            self.vars[name] = value
-        return value
 
     # Assignació de funcions: guarda la funció i la seva representació
     def visitAssignacioFuncio(self, ctx: gParser.AssignacioFuncioContext):
@@ -163,12 +174,6 @@ class ExecVisitor(gVisitor):
             func = lambda y: self.op_map[op](self._to_array(num), self._to_array(y))
         self.vars[name] = ('function', func, func_repr)
         return ('function', func, func_repr)
-
-    # Expressió com a sentència: avaluem i imprimim
-    def visitExpressio(self, ctx: gParser.ExpressioContext):
-        result = self.visit(ctx.expr())
-        print(self._format_result(result))
-        return result
 
     # Formatea el resultat per a la impressió
     def _format_result(self, value):
@@ -260,25 +265,10 @@ class ExecVisitor(gVisitor):
         op_func = self.get_op_func(bin_op_text)
         return reduce(op_func, array_list)
 
-    def visitOperador(self, ctx: gParser.OperadorContext):
-        return ctx.getText()  # Devuelve el texto completo, por ejemplo "+~" o "#"
 
-    def visitLlista(self, ctx: gParser.LlistaContext):
-        nums = [self._parse_num(child.getText()) for child in ctx.getChildren()
-                if child.getSymbol().type == gParser.NUM]
-        return np.array(nums)
 
     def _parse_num(self, text):
         return -int(text[1:]) if text[0] == '_' else int(text)
-
-    def visitVariable(self, ctx: gParser.VariableContext):
-        name = ctx.ID().getText()
-        if name not in self.vars:
-            raise ValueError(f"Undefined variable: {name}")
-        return self.vars[name]  # Devolvemos el valor completo (tupla o valor directo)
-
-    def visitParenExpr(self, ctx: gParser.ParenExprContext):
-        return self.visit(ctx.expr())
 
     def visitLlamadaFuncio(self, ctx: gParser.LlamadaFuncioContext):
         func_name = ctx.ID().getText()
@@ -299,6 +289,17 @@ class ExecVisitor(gVisitor):
         print(self._format_result(result))
         return result
 
+
+    """Auxiliar functions"""
+    # Transforms scalars into arrays
+    def _to_array(self, value):
+        return np.atleast_1d(value)
+
+    # Indexation function
+    def _index_op(self, indices, array):
+        if not np.all((indices >= 0) & (indices < len(array))):
+            raise ValueError("Index out of bounds")
+        return array[indices.astype(int)]
 
 
 def process_input(data, executor):
