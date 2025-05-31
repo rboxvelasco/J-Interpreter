@@ -12,12 +12,12 @@ stat
     ;
 
 expr
-    : unOp? atom (op atom)*   # operacio
+    : unOp? atom (binOp atom)*   # operacio
     ;
 
 atom
     : ID                # variable
-    | op                # operador
+    | binOp             # operador
     | '(' expr ')'      # parenExpr
     | list              # llistaNumeros
     | ID expr           # llamadaFuncio
@@ -28,17 +28,17 @@ list
     ;
 
 funcDef
-    : NUM op ']'   # funcioMonadica
+    : NUM binOp ']'   # funcioMonadica
     ;
 
-op
+binOp
     : '+' | '-' | '*' | '%' | '|' | '^' 
     | '>' | '<' | '>=' | '<=' | '=' | '<>'
-    | ',' | '{'
+    | ',' | '{' | '#'
     ;
 
 unOp
-    : ']'          # identidad
+    : ']' | '#'
     ;
 
 COMMENT  : 'NB.' ~[\r\n]* -> skip ;

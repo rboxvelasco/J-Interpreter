@@ -23,7 +23,8 @@ class ExecVisitor(gVisitor):
             '>=': lambda x, y: (x >= y).astype(int),
             '<=': lambda x, y: (x <= y).astype(int),
             '=':  lambda x, y: (x == y).astype(int),
-            '<>': lambda x, y: (x != y).astype(int)
+            '<>': lambda x, y: (x != y).astype(int),
+            '#':  self._copy_op  # Operador binario '#'
         }
 
     # Controla la indexació
@@ -40,8 +41,9 @@ class ExecVisitor(gVisitor):
 
     # Asegura mides compatibles
     def _ensure_compatible_shapes(self, left, right, op):
-        left, right = self._to_array(left), self._to_array(right)
-        if op in {',', '{'}:
+        left = self._to_array(left)
+        right = self._to_array(right)
+        if op in {',', '{', '#'}:  # Operadores que manejan arrays directamente
             return left, right
         if left.shape != right.shape:
             if left.shape == (1,):
@@ -51,6 +53,24 @@ class ExecVisitor(gVisitor):
             else:
                 raise ValueError("length error")
         return left, right
+
+    def _copy_op(self, left, right):
+        left = self._to_array(left)
+        right = self._to_array(right)
+        if left.ndim == 0:  # Si left es un escalar
+            n = left.item()
+            if n < 0:
+                n = 0
+            result = np.repeat(right, n)
+        else:
+            if left.shape != right.shape or left.ndim != 1 or right.ndim != 1:
+                raise ValueError("length error")
+            result = []
+            for n, x in zip(left, right):
+                if n > 0:
+                    result.extend([x] * n)
+            result = np.array(result)
+        return result
 
     # ROOT: recorre totes les stat, retorna una llista de valors
     def visitRoot(self, ctx: gParser.RootContext):
@@ -74,7 +94,7 @@ class ExecVisitor(gVisitor):
         name = ctx.ID().getText()
         func_def = ctx.funcDef()
         num = self._parse_num(func_def.NUM().getText())
-        op = func_def.op().getText()
+        op = func_def.binOp().getText()
         if op not in self.op_map:
             raise ValueError(f"Unsupported operator in function definition: {op}")
         # Guardem la representació textual, per exemple "2 | ]"
@@ -105,24 +125,25 @@ class ExecVisitor(gVisitor):
     def visitOperacio(self, ctx: gParser.OperacioContext):
         un_op = ctx.unOp()
         atoms = [self.visit(atom) for atom in ctx.atom()]
-        ops = [op.getText() for op in ctx.op()]
+        ops = [op.getText() for op in ctx.binOp()]
         
-        # Si no hi ha operadors binaris, només tenim un atom
+        # Si no hay operadores binarios, tomamos el primer atom
         if not ops:
             result = atoms[0]
         else:
-            # Avaluem de dreta a esquerra
+            # Evaluamos de derecha a izquierda (asociatividad por la derecha)
             result = atoms[-1]
             for i in range(len(ops) - 1, -1, -1):
                 left, right = self._ensure_compatible_shapes(atoms[i], result, ops[i])
                 result = self.op_map[ops[i]](left, right)
         
-        # Si hi ha un operador unari ']'
+        # Aplicar operador unario si existe
         if un_op:
             un_op_text = un_op.getText()
             if un_op_text == ']':
-                # Identitat: no fem res, retornem el resultat
-                pass
+                pass  # Identidad
+            elif un_op_text == '#':
+                result = len(result)  # Devolver la longitud
             else:
                 raise ValueError(f"Unsupported unary operator: {un_op_text}")
         
@@ -143,7 +164,7 @@ class ExecVisitor(gVisitor):
         return self.vars[name]  # Devolvemos el valor completo (tupla o valor directo)
 
     def visitOperador(self, ctx: gParser.OperadorContext):
-        return ctx.op().getText()
+        return ctx.binOp().getText()
 
     def visitParenExpr(self, ctx: gParser.ParenExprContext):
         return self.visit(ctx.expr())
@@ -194,4 +215,5 @@ if __name__ == '__main__':
                 print("\nExiting...")
                 break
             except Exception as e:
-                print(f"Error: {e}")
+                # Imprimir en rojo usando códigos ANSI
+                print(f"\033[91mError: {e}\033[0m")
