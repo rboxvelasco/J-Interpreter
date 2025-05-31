@@ -95,10 +95,11 @@ class ExecVisitor(gVisitor):
         num_flips = len(bin_op_text) - len(base_op)  # Cuenta los '~'
         if base_op not in self.op_map:
             raise ValueError(f"Unsupported operator: {base_op}")
-        op_func = self.op_map[base_op]
+        op_func = self.op_map[base_op]  # Obtener la función base
         if num_flips % 2 == 1:  # Si hay un número impar de '~', invertir operandos
-            op_func = lambda x, y: op_func(y, x)
-        return op_func
+            # Crear una nueva lambda que usa la función original
+            return lambda x, y: op_func(y, x)
+        return op_func  # Devolver la función original sin cambios
     
     # ROOT: recorre totes les stat, retorna una llista de valors
     def visitRoot(self, ctx: gParser.RootContext):
@@ -220,14 +221,13 @@ class ExecVisitor(gVisitor):
         return result
 
     def visitFold(self, ctx: gParser.FoldContext):
-        bin_op_text = ctx.binOp().getText()  # e.g., '+', ', ~'
-        array = self.visit(ctx.atom())       # Evalúa el átomo (e.g., lista '1 2 3')
-        array = self._to_array(array)        # Convierte a array si no lo es
+        bin_op_text = ctx.binOp().getText()
+        array = self.visit(ctx.atom())
+        array = self._to_array(array)
         
         if array.size == 0:
             raise ValueError("Fold on empty array")
         
-        # Convertir array 1D de escalares en lista de arrays de un elemento
         if array.ndim == 1:
             array_list = [np.array([x]) for x in array]
         else:
