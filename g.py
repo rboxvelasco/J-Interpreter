@@ -57,18 +57,35 @@ class ExecVisitor(gVisitor):
     def _copy_op(self, left, right):
         left = self._to_array(left)
         right = self._to_array(right)
-        if left.ndim == 0:  # Si left es un escalar
+        
+        if left.ndim == 0:  # Left es escalar
             n = left.item()
-            if n < 0:
-                n = 0
-            result = np.repeat(right, n)
-        else:
+            if not isinstance(n, (int, np.integer)):
+                raise ValueError("Replication count must be an integer")
+            n = max(0, n)  # No permitir repeticiones negativas
+            if right.ndim == 0:  # Right también es escalar
+                x = right.item()
+                result = np.repeat(x, n)
+            else:  # Right es un array
+                result = np.repeat(right, n)
+        elif right.ndim == 0:  # Right es escalar
+            x = right.item()
+            if not np.issubdtype(left.dtype, np.integer):
+                raise ValueError("Replication counts must be integers")
+            result = []
+            for n in left:
+                n = max(0, n)
+                result.extend([x] * n)
+            result = np.array(result)
+        else:  # Ambos son arrays
             if left.shape != right.shape or left.ndim != 1 or right.ndim != 1:
                 raise ValueError("length error")
+            if not np.issubdtype(left.dtype, np.integer):
+                raise ValueError("Replication counts must be integers")
             result = []
             for n, x in zip(left, right):
-                if n > 0:
-                    result.extend([x] * n)
+                n = max(0, n)
+                result.extend([x] * n)
             result = np.array(result)
         return result
 
@@ -93,13 +110,21 @@ class ExecVisitor(gVisitor):
     def visitAssignacioFuncio(self, ctx: gParser.AssignacioFuncioContext):
         name = ctx.ID().getText()
         func_def = ctx.funcDef()
-        num = self._parse_num(func_def.NUM().getText())
-        op = func_def.binOp().getText()
-        if op not in self.op_map:
-            raise ValueError(f"Unsupported operator in function definition: {op}")
-        # Guardem la representació textual, per exemple "2 | ]"
-        func_repr = f"{self._format_result(num)} {op} ]"
-        func = lambda y: self.op_map[op](self._to_array(num), self._to_array(y))
+        if func_def.getChildCount() == 2 and func_def.getChild(1).getText() == ':':
+            # Caso del modificador ":"
+            base_op = func_def.baseBinOp().getText()
+            if base_op not in self.op_map:
+                raise ValueError(f"Unsupported operator: {base_op}")
+            func_repr = base_op + ':'  # Ej. "*:"
+            func = lambda y: self.op_map[base_op](self._to_array(y), self._to_array(y))
+        else:
+            # Caso original "NUM binOp ]"
+            num = self._parse_num(func_def.NUM().getText())
+            op = func_def.binOp().getText()
+            if op not in self.op_map:
+                raise ValueError(f"Unsupported operator in function definition: {op}")
+            func_repr = f"{self._format_result(num)} {op} ]"  # Ej. "2 | ]"
+            func = lambda y: self.op_map[op](self._to_array(num), self._to_array(y))
         self.vars[name] = ('function', func, func_repr)
         return ('function', func, func_repr)
 
@@ -125,7 +150,7 @@ class ExecVisitor(gVisitor):
     def visitOperacio(self, ctx: gParser.OperacioContext):
         un_op = ctx.unOp()
         atoms = [self.visit(atom) for atom in ctx.atom()]
-        ops = [op.getText() for op in ctx.binOp()]  # Ejemplo: ["-~~"]
+        ops = [op.getText() for op in ctx.binOp()]
 
         # Si no hay operadores binarios, tomamos el primer atom
         if not ops:
@@ -135,12 +160,10 @@ class ExecVisitor(gVisitor):
             result = atoms[-1]
             for i in range(len(ops) - 1, -1, -1):
                 op_full = ops[i]
-                # Extraemos el operador base y contamos los '~'
                 base_op = op_full.rstrip('~')
                 num_flips = len(op_full) - len(base_op)
                 if base_op not in self.op_map:
                     raise ValueError(f"Unsupported operator: {base_op}")
-                # Determinamos si invertimos los operandos según la paridad
                 if num_flips % 2 == 0:
                     left = atoms[i]
                     right = result
@@ -152,18 +175,24 @@ class ExecVisitor(gVisitor):
 
         # Aplicar operador unario si existe
         if un_op:
-            un_op_full = un_op.getText()
-            base_un_op = un_op_full.rstrip('~')
-            num_flips = len(un_op_full) - len(base_un_op)
-            if base_un_op == ']':
-                pass  # Identidad, sin importar los '~'
-            elif base_un_op == '#':
-                if num_flips % 2 == 0:
-                    result = len(self._to_array(result))  # Longitud
-                else:
-                    result = self._copy_op(result, result)  # Reflexivo
+            un_op_text = un_op.getText()
+            if un_op_text.endswith(':'):
+                base_op = un_op_text[:-1]  # Extraer el operador base, ej. "+" de "+:"
+                if base_op not in self.op_map:
+                    raise ValueError(f"Unsupported operator: {base_op}")
+                result = self.op_map[base_op](self._to_array(result), self._to_array(result))
             else:
-                raise ValueError(f"Unsupported unary operator: {base_un_op}")
+                base_un_op = un_op_text.rstrip('~')
+                num_flips = len(un_op_text) - len(base_un_op)
+                if base_un_op == ']':
+                    pass  # Identidad
+                elif base_un_op == '#':
+                    if num_flips % 2 == 0:
+                        result = len(self._to_array(result))  # Longitud
+                    else:
+                        result = self._copy_op(result, result)  # Reflexivo
+                else:
+                    raise ValueError(f"Unsupported unary operator: {base_un_op}")
 
         return result
 

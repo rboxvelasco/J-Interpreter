@@ -28,17 +28,24 @@ list
     ;
 
 funcDef
-    : NUM binOp ']'   # funcioMonadica
+    : NUM binOp ']'     # funcioMonadica
+    | baseBinOp ':'     # funcioBinUn
     ;
 
-binOp
-    : ('+' | '-' | '*' | '%' | '|' | '^' 
-       | '>' | '<' | '>=' | '<=' | '=' | '<>'
-       | ',' | '{' | '#') ('~')*   # operadorBinario
+baseBinOp
+    : '+' | '-' | '*' | '%' | '|' | '^' 
+    | '>' | '<' | '>=' | '<=' | '=' | '<>'
+    | ',' | '{' | '#'
     ;
     
+binOp
+    : baseBinOp ('~')*
+    ;
+
 unOp
-    : (']' | '#') '~'* # operadorUnario
+    : ']' ('~')*        // tot i que '~' no afectarà el resultat, no és incorrecte escriure'l
+    | '#' ('~')*        // en ser # un operador ambigu, ~ el transforma d'unari a binari (reflexivitat de l'operand)
+    | baseBinOp ':' 
     ;
 
 COMMENT  : 'NB.' ~[\r\n]* -> skip ;

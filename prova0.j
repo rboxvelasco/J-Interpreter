@@ -41,7 +41,6 @@ square =: *
 square
 square z
 
-
 1 2 { 0 1 2 3 4
 
 4 + 1 >= 3
@@ -74,6 +73,10 @@ eq0 m
 #~ 1 2 3
 
 ] ~ 2
+
++: 1 2 3    NB. result: 2 4 6
+square =: *:
+square 1 + 0 1 2    NB. resultat: 1 4 9
 
 NB. 2 # 0 1 2 3
 NB. 0 1 2 3 # 2
