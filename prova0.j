@@ -78,6 +78,13 @@ eq0 m
 square =: *:
 square 1 + 0 1 2    NB. resultat: 1 4 9
 
+i. 4
+i. _4
+i. 3
+i. _3
+i. 3 + 4
+
+
 NB. 2 # 0 1 2 3
 NB. 0 1 2 3 # 2
 NB. 1 2 # 0 1 2 3

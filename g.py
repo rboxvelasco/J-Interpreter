@@ -146,6 +146,18 @@ class ExecVisitor(gVisitor):
         else:
             return str(value)
 
+    def visitGenerador(self, ctx: gParser.GeneradorContext):
+        expr_value = self.visit(ctx.expr())  # Evaluamos la expresión
+        n = self._to_array(expr_value)  # Convertimos a array
+        if n.size != 1:
+            raise ValueError("Argument to i. must be a scalar")
+        n = n.item()  # Obtenemos el valor escalar
+        if not isinstance(n, (int, np.integer)):
+            raise ValueError("Argument to i. must be an integer")
+        if n < 0:
+            return np.arange(-n - 1, -1, -1)  # Ej. n = -5 -> [4, 3, 2, 1, 0]
+        return np.arange(n)  # Ej. n = 7 -> [0, 1, 2, 3, 4, 5, 6]
+
     # Expressió binària dreta
     def visitOperacio(self, ctx: gParser.OperacioContext):
         un_op = ctx.unOp()
