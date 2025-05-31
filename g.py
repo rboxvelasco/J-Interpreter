@@ -10,19 +10,19 @@ class ExecVisitor(gVisitor):
     def __init__(self):
         self.vars = {}
         self.op_map = {
-            '+': lambda x, y: x + y,
-            '-': lambda x, y: x - y,
-            '*': lambda x, y: x * y,
-            '%': lambda x, y: x // y,
-            '|': lambda x, y: y % x,
-            '^': lambda x, y: x ** y,
-            ',': lambda x, y: np.concatenate((x, y)),
-            '{': self._index_op,
-            '>': lambda x, y: (x > y).astype(int),
-            '<': lambda x, y: (x < y).astype(int),
+            '+':  lambda x, y: x + y,
+            '-':  lambda x, y: x - y,
+            '*':  lambda x, y: x * y,
+            '%':  lambda x, y: x // y,
+            '|':  lambda x, y: y % x,
+            '^':  lambda x, y: x ** y,
+            ',':  lambda x, y: np.concatenate((x, y)),
+            '{':  self._index_op,
+            '>':  lambda x, y: (x > y).astype(int),
+            '<':  lambda x, y: (x < y).astype(int),
             '>=': lambda x, y: (x >= y).astype(int),
             '<=': lambda x, y: (x <= y).astype(int),
-            '=': lambda x, y: (x == y).astype(int),
+            '=':  lambda x, y: (x == y).astype(int),
             '<>': lambda x, y: (x != y).astype(int)
         }
 
@@ -96,7 +96,7 @@ class ExecVisitor(gVisitor):
         elif isinstance(value, tuple) and value[0] == 'function':
             # Si la tupla tiene un tercer elemento, usarlo; si no, usar una representación genérica
             return value[2] if len(value) > 2 else "<function>"
-        elif isinstance(value, int):
+        elif isinstance(value, (int, np.integer)):
             return f"_{abs(value)}" if value < 0 else str(value)
         else:
             return str(value)
