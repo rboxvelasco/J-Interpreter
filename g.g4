@@ -34,11 +34,11 @@ funcDef
 binOp
     : ('+' | '-' | '*' | '%' | '|' | '^' 
        | '>' | '<' | '>=' | '<=' | '=' | '<>'
-       | ',' | '{' | '#') ('~')?   # operadorBinario
+       | ',' | '{' | '#') ('~')*   # operadorBinario
     ;
     
 unOp
-    : (']' | '#') ('~')?   # operadorUnario
+    : (']' | '#') '~'* # operadorUnario
     ;
 
 COMMENT  : 'NB.' ~[\r\n]* -> skip ;

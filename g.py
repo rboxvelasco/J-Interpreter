@@ -125,7 +125,7 @@ class ExecVisitor(gVisitor):
     def visitOperacio(self, ctx: gParser.OperacioContext):
         un_op = ctx.unOp()
         atoms = [self.visit(atom) for atom in ctx.atom()]
-        ops = [op.getText() for op in ctx.binOp()]  # Obtenemos el texto completo, incluyendo ~
+        ops = [op.getText() for op in ctx.binOp()]  # Ejemplo: ["-~~"]
 
         # Si no hay operadores binarios, tomamos el primer atom
         if not ops:
@@ -134,36 +134,36 @@ class ExecVisitor(gVisitor):
             # Evaluamos de derecha a izquierda
             result = atoms[-1]
             for i in range(len(ops) - 1, -1, -1):
-                op = ops[i]
-                if op.endswith('~'):
-                    base_op = op[:-1]
-                    if base_op not in self.op_map:
-                        raise ValueError(f"Unsupported operator: {base_op}")
-                    # Invertimos los operandos
-                    left = result
-                    right = atoms[i]
-                    left, right = self._ensure_compatible_shapes(left, right, base_op)
-                    result = self.op_map[base_op](left, right)
-                else:
-                    if op not in self.op_map:
-                        raise ValueError(f"Unsupported operator: {op}")
+                op_full = ops[i]
+                # Extraemos el operador base y contamos los '~'
+                base_op = op_full.rstrip('~')
+                num_flips = len(op_full) - len(base_op)
+                if base_op not in self.op_map:
+                    raise ValueError(f"Unsupported operator: {base_op}")
+                # Determinamos si invertimos los operandos según la paridad
+                if num_flips % 2 == 0:
                     left = atoms[i]
                     right = result
-                    left, right = self._ensure_compatible_shapes(left, right, op)
-                    result = self.op_map[op](left, right)
+                else:
+                    left = result
+                    right = atoms[i]
+                left, right = self._ensure_compatible_shapes(left, right, base_op)
+                result = self.op_map[base_op](left, right)
 
         # Aplicar operador unario si existe
         if un_op:
-            un_op_text = un_op.getText()
-            if un_op_text in {']', ']~'}:
-                pass  # Identidad
-            elif un_op_text == '#':
-                result = len(self._to_array(result))  # Longitud
-            elif un_op_text == '#~':
-                # Operación reflexiva
-                result = self._copy_op(result, result)
+            un_op_full = un_op.getText()
+            base_un_op = un_op_full.rstrip('~')
+            num_flips = len(un_op_full) - len(base_un_op)
+            if base_un_op == ']':
+                pass  # Identidad, sin importar los '~'
+            elif base_un_op == '#':
+                if num_flips % 2 == 0:
+                    result = len(self._to_array(result))  # Longitud
+                else:
+                    result = self._copy_op(result, result)  # Reflexivo
             else:
-                raise ValueError(f"Unsupported unary operator: {un_op_text}")
+                raise ValueError(f"Unsupported unary operator: {base_un_op}")
 
         return result
 
