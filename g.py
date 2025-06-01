@@ -14,6 +14,7 @@ class ExecVisitor(gVisitor):
     #  - op_map: dictionary to store binary operators and its action
     def __init__(self):
         self.vars = {}
+        self.vars['i.'] = ('function', self._i_dot_funct, 'i.')
         self.bin_op_map = {
             '+':  lambda x, y: x + y,  # Addition
             '-':  lambda x, y: x - y,  # Substraction
@@ -43,6 +44,11 @@ class ExecVisitor(gVisitor):
             '#': lambda x: len(x)      # List length
         }
 
+    def visitIDotFunction(self, ctx: gParser.IDotFunctionContext):
+        """Devuelve la función i. para usar en composiciones."""
+        if 'i.' not in self.vars:
+            raise ValueError("i. is not defined")
+        return self.vars['i.']  # Retorna la tupla ('function', _i_dot_func, 'i.')
 
     def apply_unary_op(self, op_text, value):
         value = self._to_array(value)
@@ -77,6 +83,27 @@ class ExecVisitor(gVisitor):
         func = lambda y: self.bin_op_map[base_op](self._to_array(y), self._to_array(y))
         func_repr = base_op + ':'
         return ('function', func, func_repr)
+
+    def _i_dot_funct(self, y):
+            """Implementación de i.: genera un vector de enteros."""
+            y = self._to_array(y)  # Asegúrate de que _to_array esté definido
+            if y.size != 1:
+                raise ValueError("Argument to i. must be a scalar")
+            n = y.item()
+            if not isinstance(n, (int, np.integer)):
+                raise ValueError("Argument to i. must be an integer")
+            if n < 0:
+                return np.arange(-n - 1, -1, -1)  # Soporte para negativos
+            return np.arange(n)  # e.g., i. 3 -> [0, 1, 2]
+
+    def visitGeneratorAtom(self, ctx: gParser.GeneratorAtomContext):
+        """Aplica i. al argumento para generar un vector."""
+        arg = self.visit(ctx.expr())
+        if 'i.' not in self.vars:
+            raise ValueError("i. is not defined")
+        i_dot_func = self.vars['i.'][1]  # Obtiene la función
+        return i_dot_func(arg)
+
 
 
 
@@ -231,45 +258,51 @@ class ExecVisitor(gVisitor):
         else:
             return str(value)
 
-    def visitGenerator(self, ctx: gParser.GeneratorContext):
-        expr_value = self.visit(ctx.expr())  # Evaluamos la expresión
-        n = self._to_array(expr_value)  # Convertimos a array
-        if n.size != 1:
-            raise ValueError("Argument to i. must be a scalar")
-        n = n.item()  # Obtenemos el valor escalar
-        if not isinstance(n, (int, np.integer)):
-            raise ValueError("Argument to i. must be an integer")
-        if n < 0:
-            return np.arange(-n - 1, -1, -1)  # Ej. n = -5 -> [4, 3, 2, 1, 0]
-        return np.arange(n)  # Ej. n = 7 -> [0, 1, 2, 3, 4, 5, 6]
-
     # Expressió binària dreta
     def visitOperation(self, ctx: gParser.OperationContext):
         atoms = [self.visit(atom) for atom in ctx.atom()]
         ops = [op.getText() for op in ctx.binOp()]
 
-        # Si no hay operadores binarios, tomamos el primer atom
         if not ops:
             return atoms[0]
-        
+
         # Evaluamos de derecha a izquierda
         result = atoms[-1]
         for i in range(len(ops) - 1, -1, -1):
             op_full = ops[i]
             base_op = op_full.rstrip('~')
             num_flips = len(op_full) - len(base_op)
-            if base_op not in self.bin_op_map:
-                raise ValueError(f"Operador no soportado: {base_op}")
-            if num_flips % 2 == 0:
+
+            if base_op == '@:':
+                # Composición de funciones
                 left = atoms[i]
                 right = result
+                if not (isinstance(left, tuple) and left[0] == 'function'):
+                    raise ValueError("Left operand of @: must be a function")
+                if not (isinstance(right, tuple) and right[0] == 'function'):
+                    raise ValueError("Right operand of @: must be a function")
+                result = self._compose_op(left, right)
             else:
-                left = result
-                right = atoms[i]
-            left, right = self._ensure_compatible_shapes(left, right, base_op)
-            result = self.bin_op_map[base_op](left, right)
+                # Operación binaria regular
+                if isinstance(atoms[i], tuple) and atoms[i][0] == 'function':
+                    raise ValueError("Cannot apply binary operator to function")
+                if isinstance(result, tuple) and result[0] == 'function':
+                    raise ValueError("Cannot apply binary operator to function")
+                left = atoms[i]
+                right = result
+                if num_flips % 2 == 1:
+                    left, right = right, left
+                left, right = self._ensure_compatible_shapes(left, right, base_op)
+                result = self.bin_op_map[base_op](left, right)
 
         return result
+
+    def visitFoldFunction(self, ctx: gParser.FoldFunctionContext):
+        bin_op_text = ctx.binOp().getText()
+        op_func = self.get_op_func(bin_op_text)
+        func = lambda y: reduce(op_func, self._to_array(y))
+        func_repr = f"{bin_op_text}/"
+        return ('function', func, func_repr)
 
     def visitFold(self, ctx: gParser.FoldContext):
         bin_op_text = ctx.binOp().getText()

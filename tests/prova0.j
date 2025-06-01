@@ -122,8 +122,8 @@ parell i. 6    NB. resultat: 1 0 1 0 1 0
 
 +: 4
 
-sum =: +: @: *:
-sum 1 2
+squared_sum =: +: @: *:
+squared_sum 1 2
 
 NB. inc =: 1 + ]
 NB. test =: +/ @: inc @: i.

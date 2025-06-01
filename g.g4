@@ -15,16 +15,18 @@ expr
     : unaryOp expr              # unaryOperation
     | atom (binOp atom)*        # operation
     | binOp '/' atom            # fold
-    | 'i.' expr                 # generator
     ;
 
 atom
     : ID                # variable
+    | 'i.'              # iDotFunction
     | binOp             # operator
     | '(' expr ')'      # parenExpr
     | list              # llistaNumeros
     | ID expr           # functionEval
     | binToUnOp         # derivedVerbAtom
+    | binOp '/'         # foldFunction
+    | 'i.' expr         # generatorAtom
     ;
 
 list
