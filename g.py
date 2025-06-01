@@ -71,7 +71,7 @@ class ExecVisitor(gVisitor):
 
 
     def visitDerivedVerbAtom(self, ctx: gParser.DerivedVerbAtomContext):
-        base_op = ctx.derivedVerb().baseBinOp().getText()
+        base_op = ctx.binToUnOp().baseBinOp().getText()
         if base_op not in self.bin_op_map:
             raise ValueError(f"Unsupported operator: {base_op}")
         func = lambda y: self.bin_op_map[base_op](self._to_array(y), self._to_array(y))
@@ -203,7 +203,7 @@ class ExecVisitor(gVisitor):
         func_def = ctx.funcDef()
         if func_def.getChildCount() == 2 and func_def.getChild(1).getText() == ':':
             # Caso del modificador ":"
-            base_op = func_def.baseBinOp().getText()
+            base_op = func_def.binToUnOp().getText()
             if base_op not in self.bin_op_map:
                 raise ValueError(f"Unsupported operator: {base_op}")
             func_repr = base_op + ':'  # Ej. "*:"

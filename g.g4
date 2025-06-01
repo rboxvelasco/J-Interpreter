@@ -24,20 +24,20 @@ atom
     | '(' expr ')'      # parenExpr
     | list              # llistaNumeros
     | ID expr           # functionEval
-    | derivedVerb       # derivedVerbAtom
+    | binToUnOp         # derivedVerbAtom
     ;
 
 list
     : NUM (NUM)*        # lists
     ;
 
-derivedVerb
+binToUnOp
     : baseBinOp ':'  // Representa funciones como +: o *:
     ;
 
 funcDef
     : NUM binOp ']'     # funcioMonadica
-    | baseBinOp ':'    # funcioBinUn
+    | binToUnOp         # funcioBinUn
     ;
 
 baseBinOp
