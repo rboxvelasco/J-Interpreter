@@ -102,6 +102,8 @@ NB. ]/ 1 2 3
 1 +. 0
 1 +. 1
 
+-. 0 1 0
+
 1 1 1 + (| _1 _2 _3)
 
 3 }. 1 2 3 4 5
@@ -125,9 +127,10 @@ parell i. 6    NB. resultat: 1 0 1 0 1 0
 squared_sum =: +: @: *:
 squared_sum 1 2
 
-NB. inc =: 1 + ]
-NB. test =: +/ @: inc @: i.
-NB. test 3    NB. resultat: 6
+inc =: 1 + ]
+test =: +/ @: inc @: i.
+test 3    NB. resultat: 6
+test
 
 NB. 2 # 0 1 2 3
 NB. 0 1 2 3 # 2
