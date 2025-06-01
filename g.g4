@@ -13,7 +13,7 @@ stat
 
 expr
     : unaryOp expr              # unaryOperation
-    | unOp? atom (binOp atom)*  # operation
+    | atom (binOp atom)*  # operation
     | binOp '/' atom            # fold
     | 'i.' expr                 # generator
     ;
@@ -48,12 +48,9 @@ binOp
 
 unaryOp
     : '|'
-    | ']' ('~')*        // Although '~' won't affect the result, it is not incorrect writing it
-    | '#' ('~')*        // Being # an ambigous operator, ~ transforms it from unary to binary (refelexivity of the operand)
-    ;
-
-unOp
-    : baseBinOp ':' 
+    | ']' ('~')*      // Although '~' won't affect the result, it is not incorrect writing it
+    | '#' ('~')*      // Being # an ambigous operator, ~ transforms it from unary to binary (refelexivity of the operand)
+    | baseBinOp ':'   // Binary to unary transformation
     ;
 
 COMMENT  : 'NB.' ~[\r\n]* -> skip ;

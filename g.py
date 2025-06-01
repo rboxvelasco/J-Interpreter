@@ -40,12 +40,18 @@ class ExecVisitor(gVisitor):
         self.un_op_map = {
             '|': lambda x: np.abs(x),  # Absolute Value
             ']': lambda x: x,          # Identity (devuelve el valor sin cambios)
-            '#': lambda x: len(x)
+            '#': lambda x: len(x)      # List length
         }
 
 
     def apply_unary_op(self, op_text, value):
         value = self._to_array(value)
+        if op_text.endswith(':'):
+            base_op = op_text[:-1]
+            if base_op not in self.bin_op_map:
+                raise ValueError(f"Can not transform {base_op} from binary to unary")
+            return self.bin_op_map[base_op](value, value)
+
         base_op = op_text.rstrip('~')
         num_flips = len(op_text) - len(base_op)
 
@@ -231,41 +237,29 @@ class ExecVisitor(gVisitor):
 
     # Expressió binària dreta
     def visitOperation(self, ctx: gParser.OperationContext):
-        un_op = ctx.unOp()
         atoms = [self.visit(atom) for atom in ctx.atom()]
         ops = [op.getText() for op in ctx.binOp()]
 
         # Si no hay operadores binarios, tomamos el primer atom
         if not ops:
-            result = atoms[0]
-        else:
-            # Evaluamos de derecha a izquierda
-            result = atoms[-1]
-            for i in range(len(ops) - 1, -1, -1):
-                op_full = ops[i]
-                base_op = op_full.rstrip('~')
-                num_flips = len(op_full) - len(base_op)
-                if base_op not in self.bin_op_map:
-                    raise ValueError(f"Operador no soportado: {base_op}")
-                if num_flips % 2 == 0:
-                    left = atoms[i]
-                    right = result
-                else:
-                    left = result
-                    right = atoms[i]
-                left, right = self._ensure_compatible_shapes(left, right, base_op)
-                result = self.bin_op_map[base_op](left, right)
-
-        # Aplicar operador unario si existe (solo para baseBinOp ':')
-        if un_op:
-            un_op_text = un_op.getText()
-            if un_op_text.endswith(':'):
-                base_op = un_op_text[:-1]
-                if base_op not in self.bin_op_map:
-                    raise ValueError(f"Operador no soportado: {base_op}")
-                result = self.bin_op_map[base_op](self._to_array(result), self._to_array(result))
+            return atoms[0]
+        
+        # Evaluamos de derecha a izquierda
+        result = atoms[-1]
+        for i in range(len(ops) - 1, -1, -1):
+            op_full = ops[i]
+            base_op = op_full.rstrip('~')
+            num_flips = len(op_full) - len(base_op)
+            if base_op not in self.bin_op_map:
+                raise ValueError(f"Operador no soportado: {base_op}")
+            if num_flips % 2 == 0:
+                left = atoms[i]
+                right = result
             else:
-                raise ValueError(f"Operador unario inesperado: {un_op_text}")
+                left = result
+                right = atoms[i]
+            left, right = self._ensure_compatible_shapes(left, right, base_op)
+            result = self.bin_op_map[base_op](left, right)
 
         return result
 
