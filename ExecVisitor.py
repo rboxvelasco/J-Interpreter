@@ -1,6 +1,6 @@
-import sys
 import numpy as np
 from functools import reduce
+
 
 from antlr4 import *
 from gLexer import gLexer
@@ -69,14 +69,6 @@ class ExecVisitor(gVisitor):
         value = self.visit(ctx.expr())
         return self.apply_unary_op(op_text, value)
 
-
-    def visitDerivedVerbAtom(self, ctx: gParser.DerivedVerbAtomContext):
-        base_op = ctx.derivedVerb().baseBinOp().getText()
-        if base_op not in self.bin_op_map:
-            raise ValueError(f"Unsupported operator: {base_op}")
-        func = lambda y: self.bin_op_map[base_op](self._to_array(y), self._to_array(y))
-        func_repr = base_op + ':'
-        return ('function', func, func_repr)
 
 
 
@@ -329,32 +321,3 @@ class ExecVisitor(gVisitor):
         n = self._to_array(n).item()
         if n > len(y): return np.concatenate((y, np.zeros(n - len(y), dtype=y.dtype)))
         else:          return y[:n]
-
-
-def process_input(data, executor):
-    input_stream = InputStream(data + '\n')
-    lexer = gLexer(input_stream)
-    tokens = CommonTokenStream(lexer)
-    parser = gParser(tokens)
-    return executor.visit(parser.root())
-
-if __name__ == '__main__':
-    executor = ExecVisitor()
-    if len(sys.argv) > 1:
-        with open(sys.argv[1], encoding='utf-8') as f:
-            process_input(f.read(), executor)
-    else:
-        print("Interactive mode. Enter expressions, or press Ctrl+D/Ctrl+C to exit.")
-        while True:
-            try:
-                sys.stdout.write('> ')
-                sys.stdout.flush()
-                line = input()
-                if line.strip():
-                    process_input(line, executor)
-            except (EOFError, KeyboardInterrupt):
-                print("\nExiting...")
-                break
-            except Exception as e:
-                # Imprimir en rojo usando códigos ANSI
-                print(f"\033[91mError: {e}\033[0m")

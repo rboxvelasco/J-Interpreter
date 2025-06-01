@@ -13,7 +13,7 @@ stat
 
 expr
     : unaryOp expr              # unaryOperation
-    | atom (binOp atom)*  # operation
+    | atom (binOp atom)*        # operation
     | binOp '/' atom            # fold
     | 'i.' expr                 # generator
     ;
@@ -24,10 +24,15 @@ atom
     | '(' expr ')'      # parenExpr
     | list              # llistaNumeros
     | ID expr           # functionEval
+    | derivedVerb       # derivedVerbAtom
     ;
 
 list
     : NUM (NUM)*        # lists
+    ;
+
+derivedVerb
+    : baseBinOp ':'  // Representa funciones como +: o *:
     ;
 
 funcDef

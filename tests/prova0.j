@@ -122,7 +122,9 @@ parell i. 6    NB. resultat: 1 0 1 0 1 0
 
 +: 4
 
-NB. sum =: +: @: *:
+sum =: +: @: *:
+sum 1 2
+
 NB. inc =: 1 + ]
 NB. test =: +/ @: inc @: i.
 NB. test 3    NB. resultat: 6

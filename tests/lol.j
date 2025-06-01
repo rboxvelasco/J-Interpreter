@@ -31,6 +31,7 @@ parell =: eq0 @: mod2
 parell i. 6        NB. result: 1 0 1 0 1 0
 
 sum =: +: @: *:
+
 inc =: 1 + ]
 test =: +/ @: inc @: i.
 test 3    NB. resultat: 6
