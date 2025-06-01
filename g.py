@@ -37,6 +37,31 @@ class ExecVisitor(gVisitor):
             '{':  self._index_op,
             '@:': self._compose_op
         }
+        self.un_op_map = {
+            '|': lambda x: np.abs(x),  # Valor absoluto
+            # Añade aquí otros operadores unarios en el futuro
+        }
+
+
+    def apply_unary_op(self, op, value):
+        value = self._to_array(value)
+        if op in self.un_op_map:
+            return self.un_op_map[op](value)
+        elif op == ']':
+            return value  # Identidad
+        elif op == '#':
+            return len(value)  # Longitud (por ahora, sin flips)
+        else:
+            raise ValueError(f"Unsupported unary operator: {op}")
+
+
+    def visitUnaryOperation(self, ctx: gParser.UnaryOperationContext):
+        op = ctx.unaryOp().getText()
+        value = self.visit(ctx.expr())
+        return self.apply_unary_op(op, value)
+
+
+
 
     # ROOT: visits every statement and returns a list of values
     def visitRoot(self, ctx: gParser.RootContext):
@@ -232,22 +257,17 @@ class ExecVisitor(gVisitor):
         if un_op:
             un_op_text = un_op.getText()
             if un_op_text.endswith(':'):
-                base_op = un_op_text[:-1]  # Extraer el operador base, ej. "+" de "+:"
+                base_op = un_op_text[:-1]
                 if base_op not in self.op_map:
                     raise ValueError(f"Unsupported operator: {base_op}")
                 result = self.op_map[base_op](self._to_array(result), self._to_array(result))
             else:
                 base_un_op = un_op_text.rstrip('~')
                 num_flips = len(un_op_text) - len(base_un_op)
-                if base_un_op == ']':
-                    pass  # Identidad
-                elif base_un_op == '#':
-                    if num_flips % 2 == 0:
-                        result = len(self._to_array(result))  # Longitud
-                    else:
-                        result = self._copy_op(result, result)  # Reflexivo
+                if num_flips % 2 == 1 and base_un_op == '#':
+                    result = self._copy_op(result, result)  # Reflexivo con flip
                 else:
-                    raise ValueError(f"Unsupported unary operator: {base_un_op}")
+                    result = self.apply_unary_op(base_un_op, result)
 
         return result
 
@@ -270,7 +290,7 @@ class ExecVisitor(gVisitor):
 
     def _parse_num(self, text):
         return -int(text[1:]) if text[0] == '_' else int(text)
-        
+
 
     def visitFunctionEval(self, ctx: gParser.FunctionEvalContext):
         func_name = ctx.ID().getText()

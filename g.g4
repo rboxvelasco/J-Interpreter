@@ -12,9 +12,10 @@ stat
     ;
 
 expr
-    : unOp? atom (binOp atom)*   # operation
-    | binOp '/' atom             # fold
-    | 'i.' expr                  # generator
+    : unaryOp expr              # unaryOperation
+    | unOp? atom (binOp atom)*  # operation
+    | binOp '/' atom            # fold
+    | 'i.' expr                 # generator
     ;
 
 atom
@@ -43,6 +44,10 @@ baseBinOp
     
 binOp
     : baseBinOp ('~')*
+    ;
+
+unaryOp
+    : '|'
     ;
 
 unOp
