@@ -48,12 +48,12 @@ binOp
 
 unaryOp
     : '|'
+    | ']' ('~')*        // Although '~' won't affect the result, it is not incorrect writing it
+    | '#' ('~')*        // Being # an ambigous operator, ~ transforms it from unary to binary (refelexivity of the operand)
     ;
 
 unOp
-    : ']' ('~')*        // Although '~' won't affect the result, it is not incorrect writing it
-    | '#' ('~')*        // Being # an ambigous operator, ~ transforms it from unary to binary (refelexivity of the operand)
-    | baseBinOp ':' 
+    : baseBinOp ':' 
     ;
 
 COMMENT  : 'NB.' ~[\r\n]* -> skip ;

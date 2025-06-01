@@ -14,51 +14,54 @@ class ExecVisitor(gVisitor):
     #  - op_map: dictionary to store binary operators and its action
     def __init__(self):
         self.vars = {}
-        self.op_map = {
-            '+':  lambda x, y: x + y,
-            '-':  lambda x, y: x - y,
-            '*':  lambda x, y: x * y,
-            '%':  lambda x, y: x // y,
-            '|':  lambda x, y: y % x,
-            '^':  lambda x, y: x ** y,
-            '>':  lambda x, y: (x > y).astype(int),
-            '<':  lambda x, y: (x < y).astype(int),
-            '>=': lambda x, y: (x >= y).astype(int),
-            '<=': lambda x, y: (x <= y).astype(int),
-            '=':  lambda x, y: (x == y).astype(int),
-            '<>': lambda x, y: (x != y).astype(int),
-            ',':  lambda x, y: np.concatenate((x, y)),
-            'e.': lambda x, y: np.isin(x, y).astype(int),
-            '*.': lambda x, y: (self._to_array(x) & self._to_array(y)).astype(int),
-            '+.': lambda x, y: (self._to_array(x) | self._to_array(y)).astype(int),
-            '}.': lambda n, y: self._to_array(y)[max(0, self._to_array(n).item()):],
+        self.bin_op_map = {
+            '+':  lambda x, y: x + y,  # Addition
+            '-':  lambda x, y: x - y,  # Substraction
+            '*':  lambda x, y: x * y,  # Product
+            '%':  lambda x, y: x // y, # Division
+            '|':  lambda x, y: y % x,  # Remaining
+            '^':  lambda x, y: x ** y, # Power
+            '>':  lambda x, y: (x > y).astype(int),       # Greater than
+            '<':  lambda x, y: (x < y).astype(int),       # Less than
+            '>=': lambda x, y: (x >= y).astype(int),      # Greater than or equal
+            '<=': lambda x, y: (x <= y).astype(int),      # Less than or equal
+            '=':  lambda x, y: (x == y).astype(int),      # Equal
+            '<>': lambda x, y: (x != y).astype(int),      # Different
+            ',':  lambda x, y: np.concatenate((x, y)),    # Concatenation
+            'e.': lambda x, y: np.isin(x, y).astype(int), # Membership
+            '*.': lambda x, y: (self._to_array(x) & self._to_array(y)).astype(int),  # AND
+            '+.': lambda x, y: (self._to_array(x) | self._to_array(y)).astype(int),  # OR
+            '}.': lambda n, y: self._to_array(y)[max(0, self._to_array(n).item()):], # Drop
             '{.': self._take,     # Not a lambda function since it fulfills with 0's
             '#':  self._copy_op,  # Binary operator, not unary
             '{':  self._index_op,
             '@:': self._compose_op
         }
         self.un_op_map = {
-            '|': lambda x: np.abs(x),  # Valor absoluto
-            # Añade aquí otros operadores unarios en el futuro
+            '|': lambda x: np.abs(x),  # Absolute Value
+            ']': lambda x: x,          # Identity (devuelve el valor sin cambios)
+            '#': lambda x: len(x)
         }
 
 
-    def apply_unary_op(self, op, value):
+    def apply_unary_op(self, op_text, value):
         value = self._to_array(value)
-        if op in self.un_op_map:
-            return self.un_op_map[op](value)
-        elif op == ']':
-            return value  # Identidad
-        elif op == '#':
-            return len(value)  # Longitud (por ahora, sin flips)
+        base_op = op_text.rstrip('~')
+        num_flips = len(op_text) - len(base_op)
+
+        # Special case '#~', that should be transformed to binary
+        if base_op == '#':
+            return self.bin_op_map[base_op](value, value) if num_flips > 0 else self.un_op_map[base_op](value)
+        elif base_op in self.un_op_map:
+            return self.un_op_map[base_op](value)
         else:
-            raise ValueError(f"Unsupported unary operator: {op}")
+            raise ValueError(f"Operador unario no soportado: {base_op}")
 
 
     def visitUnaryOperation(self, ctx: gParser.UnaryOperationContext):
-        op = ctx.unaryOp().getText()
+        op_text = ctx.unaryOp().getText()
         value = self.visit(ctx.expr())
-        return self.apply_unary_op(op, value)
+        return self.apply_unary_op(op_text, value)
 
 
 
@@ -98,8 +101,8 @@ class ExecVisitor(gVisitor):
     def visitAssignation(self, ctx: gParser.AssignationContext):
         name = ctx.ID().getText()
         value = self.visit(ctx.expr())
-        if isinstance(value, str) and value in self.op_map:
-            func = lambda y: self.op_map[value](y, y)
+        if isinstance(value, str) and value in self.bin_op_map:
+            func = lambda y: self.bin_op_map[value](y, y)
             self.vars[name] = ('function', func, value)
         else:
             self.vars[name] = value
@@ -172,10 +175,10 @@ class ExecVisitor(gVisitor):
     def get_op_func(self, bin_op_text):
         base_op = bin_op_text.rstrip('~')  # Quita los '~' del final
         num_flips = len(bin_op_text) - len(base_op)  # Cuenta los '~'
-        if base_op not in self.op_map:
+        if base_op not in self.bin_op_map:
             raise ValueError(f"Unsupported operator: {base_op}")
 
-        op_func = self.op_map[base_op]  # Obtener la función base
+        op_func = self.bin_op_map[base_op]  # Obtener la función base
         if num_flips % 2 == 1:  # Si hay un número impar de '~', invertir operandos
             return lambda x, y: op_func(y, x)
         return op_func
@@ -187,18 +190,18 @@ class ExecVisitor(gVisitor):
         if func_def.getChildCount() == 2 and func_def.getChild(1).getText() == ':':
             # Caso del modificador ":"
             base_op = func_def.baseBinOp().getText()
-            if base_op not in self.op_map:
+            if base_op not in self.bin_op_map:
                 raise ValueError(f"Unsupported operator: {base_op}")
             func_repr = base_op + ':'  # Ej. "*:"
-            func = lambda y: self.op_map[base_op](self._to_array(y), self._to_array(y))
+            func = lambda y: self.bin_op_map[base_op](self._to_array(y), self._to_array(y))
         else:
             # Caso original "NUM binOp ]"
             num = self._parse_num(func_def.NUM().getText())
             op = func_def.binOp().getText()
-            if op not in self.op_map:
+            if op not in self.bin_op_map:
                 raise ValueError(f"Unsupported operator in function definition: {op}")
             func_repr = f"{self._format_result(num)} {op} ]"  # Ej. "2 | ]"
-            func = lambda y: self.op_map[op](self._to_array(num), self._to_array(y))
+            func = lambda y: self.bin_op_map[op](self._to_array(num), self._to_array(y))
         self.vars[name] = ('function', func, func_repr)
         return ('function', func, func_repr)
 
@@ -242,8 +245,8 @@ class ExecVisitor(gVisitor):
                 op_full = ops[i]
                 base_op = op_full.rstrip('~')
                 num_flips = len(op_full) - len(base_op)
-                if base_op not in self.op_map:
-                    raise ValueError(f"Unsupported operator: {base_op}")
+                if base_op not in self.bin_op_map:
+                    raise ValueError(f"Operador no soportado: {base_op}")
                 if num_flips % 2 == 0:
                     left = atoms[i]
                     right = result
@@ -251,23 +254,18 @@ class ExecVisitor(gVisitor):
                     left = result
                     right = atoms[i]
                 left, right = self._ensure_compatible_shapes(left, right, base_op)
-                result = self.op_map[base_op](left, right)
+                result = self.bin_op_map[base_op](left, right)
 
-        # Aplicar operador unario si existe
+        # Aplicar operador unario si existe (solo para baseBinOp ':')
         if un_op:
             un_op_text = un_op.getText()
             if un_op_text.endswith(':'):
                 base_op = un_op_text[:-1]
-                if base_op not in self.op_map:
-                    raise ValueError(f"Unsupported operator: {base_op}")
-                result = self.op_map[base_op](self._to_array(result), self._to_array(result))
+                if base_op not in self.bin_op_map:
+                    raise ValueError(f"Operador no soportado: {base_op}")
+                result = self.bin_op_map[base_op](self._to_array(result), self._to_array(result))
             else:
-                base_un_op = un_op_text.rstrip('~')
-                num_flips = len(un_op_text) - len(base_un_op)
-                if num_flips % 2 == 1 and base_un_op == '#':
-                    result = self._copy_op(result, result)  # Reflexivo con flip
-                else:
-                    result = self.apply_unary_op(base_un_op, result)
+                raise ValueError(f"Operador unario inesperado: {un_op_text}")
 
         return result
 
