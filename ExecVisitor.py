@@ -14,6 +14,13 @@ class ExecVisitor(gVisitor):
     def __init__(self):
         self.vars = {}
         self.vars['i.'] = ('function', self._i_dot_funct, 'i.')
+        self.un_op_map = {
+            ']': lambda x: x, 
+            '#': lambda x: len(x),
+            '|': lambda x: np.abs(x), 
+            '|.': lambda x: np.flip(x),
+            '-.': lambda x: (x == 0).astype(int)
+        }
         self.bin_op_map = {
             '+':  lambda x, y: x + y,
             '-':  lambda x, y: x - y,
@@ -36,12 +43,6 @@ class ExecVisitor(gVisitor):
             '#':  self._copy_op,
             '{':  self._index_op,
             '@:': self._compose_op
-        }
-        self.un_op_map = {
-            ']': lambda x: x, 
-            '#': lambda x: len(x),
-            '|': lambda x: np.abs(x), 
-            '-.': lambda x: (x == 0).astype(int)
         }
 
     def visitIDotFunction(self, ctx: gParser.IDotFunctionContext):
