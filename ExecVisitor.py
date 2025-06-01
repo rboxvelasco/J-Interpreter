@@ -13,7 +13,8 @@ class ExecVisitor(gVisitor):
     #  - op_map: dictionary to store binary operators and its action
     def __init__(self):
         self.vars = {}
-        self.vars['i.'] = ('function', self._i_dot_funct, 'i.')
+        self.vars['i.'] = ('function', self._i_dot_func, 'i.')
+        self.vars['i:'] = ('function', self._i_colon_func, 'i:')
         self.un_op_map = {
             ']': lambda x: x, 
             '#': lambda x: len(x),
@@ -48,10 +49,16 @@ class ExecVisitor(gVisitor):
         }
 
     def visitIDotFunction(self, ctx: gParser.IDotFunctionContext):
-        """Devuelve la función i. para usar en composiciones."""
+        """Returns the i. function for use in compositions."""
         if 'i.' not in self.vars:
             raise ValueError("i. is not defined")
-        return self.vars['i.']  # Retorna la tupla ('function', _i_dot_func, 'i.')
+        return self.vars['i.']  # Returns tuple ('function', _i_dot_func, 'i.')
+
+    def visitIColonFunction(self, ctx: gParser.IColonFunctionContext):
+        """Returns the i: function for use in compositions."""
+        if 'i:' not in self.vars:
+            raise ValueError("i: is not defined")
+        return self.vars['i:']  # Returns tuple ('function', _i_colon_func, 'i:')
 
     def apply_unary_op(self, op_text, value):
         value = self._to_array(value)
@@ -87,7 +94,7 @@ class ExecVisitor(gVisitor):
         func_repr = base_op + ':'
         return ('function', func, func_repr)
 
-    def _i_dot_funct(self, y):
+    def _i_dot_func(self, y):
             """Implementación de i.: genera un vector de enteros."""
             y = self._to_array(y)  # Asegúrate de que _to_array esté definido
             if y.size != 1:
@@ -99,13 +106,24 @@ class ExecVisitor(gVisitor):
                 return np.arange(-n - 1, -1, -1)  # Soporte para negativos
             return np.arange(n)  # e.g., i. 3 -> [0, 1, 2]
 
+    def _i_colon_func(self, y):
+            """Implementation of i:: generates a vector [-n .. n]."""
+            y = self._to_array(y)
+            if y.size != 1:
+                raise ValueError("Argument to i: must be a scalar")
+            n = y.item()
+            if not isinstance(n, (int, np.integer)):
+                raise ValueError("Argument to i: must be an integer")
+            return np.arange(-abs(n), abs(n) + 1)  # e.g., i: 3 -> [-3, -2, -1, 0, 1, 2, 3]
+
     def visitGenerator(self, ctx: gParser.GeneratorContext):
-        """Aplica i. al argumento para generar un vector."""
+        """Applies i. or i: to the argument to generate a vector."""
+        generator = ctx.getChild(0).getText()  # Gets 'i.' or 'i:'
         arg = self.visit(ctx.expr())
-        if 'i.' not in self.vars:
-            raise ValueError("i. is not defined")
-        i_dot_func = self.vars['i.'][1]  # Obtiene la función
-        return i_dot_func(arg)
+        if generator not in self.vars:
+            raise ValueError(f"{generator} is not defined")
+        gen_func = self.vars[generator][1]  # Gets the function (_i_dot_func or _i_colon_func)
+        return gen_func(arg)
 
 
 

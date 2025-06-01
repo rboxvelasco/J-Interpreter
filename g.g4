@@ -20,13 +20,14 @@ expr
 atom
     : ID                # variable
     | 'i.'              # iDotFunction
+    | 'i:'              # iColonFunction
     | binOp             # operator
     | '(' expr ')'      # parenExpr
     | NUM (NUM)*        # list
     | ID expr           # functionEval
     | binToUnOp         # derivedVerbAtom
     | binOp '/'         # foldFunction
-    | 'i.' expr         # generator
+    | ('i.' | 'i:') expr  # generator
     ;
 
 binToUnOp
