@@ -1,7 +1,7 @@
 grammar g;
 
 root
-    : '\n'* stat ('\n'+ stat)* '\n'* EOF
+    : ENDL* stat (ENDL+ stat)* ENDL* EOF
     ;
 
 stat
@@ -13,7 +13,7 @@ stat
 
 expr
     : unaryOp expr              # unaryOperation
-    | atom (binOp atom)*        # operation
+    | atom (binOp atom)*        # binaryOperation
     | binOp '/' atom            # fold
     ;
 
@@ -22,24 +22,20 @@ atom
     | 'i.'              # iDotFunction
     | binOp             # operator
     | '(' expr ')'      # parenExpr
-    | list              # llistaNumeros
+    | NUM (NUM)*        # list
     | ID expr           # functionEval
     | binToUnOp         # derivedVerbAtom
     | binOp '/'         # foldFunction
-    | 'i.' expr         # generatorAtom
-    ;
-
-list
-    : NUM (NUM)*        # lists
+    | 'i.' expr         # generator
     ;
 
 binToUnOp
-    : baseBinOp ':'  // Representa funciones como +: o *:
+    : baseBinOp ':'
     ;
 
 funcDef
-    : NUM binOp ']'     # funcioMonadica
-    | binToUnOp         # funcioBinUn
+    : NUM binOp ']'     # monadicFunction
+    | binToUnOp         # binUnFunction
     ;
 
 baseBinOp
@@ -54,15 +50,15 @@ binOp
     ;
 
 unaryOp
-    : '|'
-    | '-.'
-    | '|.'
+    : '-.' | '|.' | '|'
+    | '>:' | '<:'
     | ']' ('~')*      // Although '~' won't affect the result, it is not incorrect writing it
     | '#' ('~')*      // Being # an ambigous operator, ~ transforms it from unary to binary (refelexivity of the operand)
-    | baseBinOp ':'   // Binary to unary transformation
+    | binToUnOp       // Binary to unary transformation
     ;
 
 COMMENT  : 'NB.' ~[\r\n]* -> skip ;
+ENDL     : [\r\n] ;
 NUM      : '_'? [0-9]+ ;
 ID       : [a-zA-Z_][a-zA-Z_0-9]* ;
 WS       : [ \t]+ -> skip ;

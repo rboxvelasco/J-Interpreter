@@ -18,6 +18,8 @@ class ExecVisitor(gVisitor):
             ']': lambda x: x, 
             '#': lambda x: len(x),
             '|': lambda x: np.abs(x), 
+            '>:': lambda x: x + 1,
+            '<:': lambda x: x - 1,
             '|.': lambda x: np.flip(x),
             '-.': lambda x: (x == 0).astype(int)
         }
@@ -53,7 +55,7 @@ class ExecVisitor(gVisitor):
 
     def apply_unary_op(self, op_text, value):
         value = self._to_array(value)
-        if op_text.endswith(':'):
+        if op_text.endswith(':') and op_text not in ['>:', '<:']:
             base_op = op_text[:-1]
             if base_op not in self.bin_op_map:
                 raise ValueError(f"Can not transform {base_op} from binary to unary")
@@ -97,7 +99,7 @@ class ExecVisitor(gVisitor):
                 return np.arange(-n - 1, -1, -1)  # Soporte para negativos
             return np.arange(n)  # e.g., i. 3 -> [0, 1, 2]
 
-    def visitGeneratorAtom(self, ctx: gParser.GeneratorAtomContext):
+    def visitGenerator(self, ctx: gParser.GeneratorContext):
         """Aplica i. al argumento para generar un vector."""
         arg = self.visit(ctx.expr())
         if 'i.' not in self.vars:
@@ -134,7 +136,7 @@ class ExecVisitor(gVisitor):
         return self.vars[name]
 
     # Returns an array
-    def visitLists(self, ctx: gParser.ListsContext):
+    def visitList(self, ctx: gParser.ListContext):
         nums = [self._parse_num(child.getText()) for child in ctx.getChildren()
                 if child.getSymbol().type == gParser.NUM]
         return np.array(nums)
@@ -260,7 +262,7 @@ class ExecVisitor(gVisitor):
             return str(value)
 
     # Expressió binària dreta
-    def visitOperation(self, ctx: gParser.OperationContext):
+    def visitBinaryOperation(self, ctx: gParser.BinaryOperationContext):
         atoms = [self.visit(atom) for atom in ctx.atom()]
         ops = [op.getText() for op in ctx.binOp()]
 
