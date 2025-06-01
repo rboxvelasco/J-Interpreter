@@ -1,9 +1,5 @@
 # G (Mini-J)
 
-This project implements an interpreter for **G**, a subset of the **J** programming language. Below is a complete `README.md` with expanded sections and usage examples to guide the user.
-
----
-
 ## Table of Contents
 
 1. [Description](#description)  
@@ -28,9 +24,9 @@ This project implements an interpreter for **G**, a subset of the **J** programm
 
 ## Description
 
-This work implements an interpreter for **G**, a subset of the **J** programming language. G inherits J’s functional, array-oriented design and focuses on high-level list operations.  
+This project implements an interpreter for **G**, a subset of the **J** programming language. G inherits J’s functional, array-oriented design and focuses on high-level list operations.  
 
-In this `README`, you will find design decisions, descriptions of available features, and practical examples so that anyone can understand, install, and use the G interpreter easily.
+In this `README`, you will find design decisions, descriptions of available features, and practical examples.
 
 ---
 
@@ -165,22 +161,19 @@ python3 g.py
   ```
   >
   ```
-- You can type G expressions directly, for example:
+- You can type G expressions directly and results will be shown, for example:
   ```text
   > 1 2 3 + 4 5 6
   5 7 9
   > x =: 10
   > x * 2
   20
-  > f =: { y . y * y }
-  > f 5
-  25
   ```
 - To exit interactive mode, press `Ctrl+D` or `Ctrl+C`.
 
 ### Evaluating a Code File
 
-If you have a file with extension `.j` (for example, `program.j`) containing G code, you can pass it as an argument:
+If you have a file with extension `.j` containing G code, you can pass it as an argument:
 
 ```bash
 python3 g.py program.j
@@ -201,10 +194,14 @@ python3 g.py program.j
   ```
   6 7 8 9 10
   ```
+You can easily redirect your output to a file `file.out` executing:
+```bash
+python3 g.py program.j > file.out
+```
 
 ### Running Automated Tests
 
-The `tests/` folder contains sample `.j` files with corresponding `.out` files. To run all tests automatically:
+`tests/` directory contains sample `.j` files with their corresponding `.out` files. To run all tests automatically. To test them all automatically, you can run:
 
 ```bash
 python3 tests.py
