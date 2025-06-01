@@ -32,7 +32,7 @@ class ExecVisitor(gVisitor):
             '*.': lambda x, y: (self._to_array(x) & self._to_array(y)).astype(int),
             '+.': lambda x, y: (self._to_array(x) | self._to_array(y)).astype(int),
             '}.': lambda n, y: self._to_array(y)[max(0, self._to_array(n).item()):],
-            '{.': lambda n, y: self._take(n, y), # Not a lambda function since it fulfills with 0's
+            '{.': self._take,     # Not a lambda function since it fulfills with 0's
             '#':  self._copy_op,  # Binary operator, not unary
             '{':  self._index_op,
             '@:': self._compose_op
@@ -53,7 +53,7 @@ class ExecVisitor(gVisitor):
         return result
 
     # Returns an operator
-    def visitOperador(self, ctx: gParser.OperadorContext):
+    def visitOperator(self, ctx: gParser.OperatorContext):
         return ctx.getText()
 
     # Returns the value of a variable
@@ -64,13 +64,13 @@ class ExecVisitor(gVisitor):
         return self.vars[name]
 
     # Returns an array
-    def visitLlista(self, ctx: gParser.LlistaContext):
+    def visitLists(self, ctx: gParser.ListsContext):
         nums = [self._parse_num(child.getText()) for child in ctx.getChildren()
                 if child.getSymbol().type == gParser.NUM]
         return np.array(nums)
 
     # Stores the variable and returns its value
-    def visitAssignacio(self, ctx: gParser.AssignacioContext):
+    def visitAssignation(self, ctx: gParser.AssignationContext):
         name = ctx.ID().getText()
         value = self.visit(ctx.expr())
         if isinstance(value, str) and value in self.op_map:
@@ -156,7 +156,7 @@ class ExecVisitor(gVisitor):
         return op_func
 
     # Assignació de funcions: guarda la funció i la seva representació
-    def visitAssignacioFuncio(self, ctx: gParser.AssignacioFuncioContext):
+    def visitDeclareFunction(self, ctx: gParser.DeclareFunctionContext):
         name = ctx.ID().getText()
         func_def = ctx.funcDef()
         if func_def.getChildCount() == 2 and func_def.getChild(1).getText() == ':':
@@ -189,7 +189,7 @@ class ExecVisitor(gVisitor):
         else:
             return str(value)
 
-    def visitGenerador(self, ctx: gParser.GeneradorContext):
+    def visitGenerator(self, ctx: gParser.GeneratorContext):
         expr_value = self.visit(ctx.expr())  # Evaluamos la expresión
         n = self._to_array(expr_value)  # Convertimos a array
         if n.size != 1:
@@ -202,7 +202,7 @@ class ExecVisitor(gVisitor):
         return np.arange(n)  # Ej. n = 7 -> [0, 1, 2, 3, 4, 5, 6]
 
     # Expressió binària dreta
-    def visitOperacio(self, ctx: gParser.OperacioContext):
+    def visitOperation(self, ctx: gParser.OperationContext):
         un_op = ctx.unOp()
         atoms = [self.visit(atom) for atom in ctx.atom()]
         ops = [op.getText() for op in ctx.binOp()]
@@ -258,7 +258,6 @@ class ExecVisitor(gVisitor):
         
         if array.size == 0:
             raise ValueError("Fold on empty array")
-        
         if array.ndim == 1:
             array_list = [np.array([x]) for x in array]
         else:
@@ -271,8 +270,9 @@ class ExecVisitor(gVisitor):
 
     def _parse_num(self, text):
         return -int(text[1:]) if text[0] == '_' else int(text)
+        
 
-    def visitLlamadaFuncio(self, ctx: gParser.LlamadaFuncioContext):
+    def visitFunctionEval(self, ctx: gParser.FunctionEvalContext):
         func_name = ctx.ID().getText()
         arg = self.visit(ctx.expr())
         if func_name not in self.vars or self.vars[func_name][0] != 'function':
@@ -281,7 +281,7 @@ class ExecVisitor(gVisitor):
         return func(arg)
 
     # (de moment no suportem funcions)
-    def visitCridaFuncio(self, ctx: gParser.CridaFuncioContext):
+    def visitFunctionCall(self, ctx: gParser.FunctionCallContext):
         name = ctx.ID().getText()
         if name not in self.vars or self.vars[name][0] != 'function':
             raise ValueError(f"Not a function: {name}")

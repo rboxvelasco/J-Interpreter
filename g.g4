@@ -5,33 +5,33 @@ root
     ;
 
 stat
-    : ID '=:' expr      # assignacio
-    | ID '=:' funcDef   # assignacioFuncio
-    | ID expr           # cridaFuncio
+    : ID '=:' expr      # assignation
+    | ID '=:' funcDef   # declareFunction
+    | ID expr           # functionCall
     | expr              # expressio
     ;
 
 expr
-    : unOp? atom (binOp atom)*   # operacio
+    : unOp? atom (binOp atom)*   # operation
     | binOp '/' atom             # fold
-    | 'i.' expr                  # generador
+    | 'i.' expr                  # generator
     ;
 
 atom
     : ID                # variable
-    | binOp             # operador
+    | binOp             # operator
     | '(' expr ')'      # parenExpr
     | list              # llistaNumeros
-    | ID expr           # llamadaFuncio
+    | ID expr           # functionEval
     ;
 
 list
-    : NUM (NUM)*        # llista
+    : NUM (NUM)*        # lists
     ;
 
 funcDef
     : NUM binOp ']'     # funcioMonadica
-    | baseBinOp ':'     # funcioBinUn
+    | baseBinOp ':'    # funcioBinUn
     ;
 
 baseBinOp
@@ -46,9 +46,8 @@ binOp
     ;
 
 unOp
-    : ']' ('~')*        // tot i que '~' no afectarà el resultat, no és incorrecte escriure'l
-    | '#' ('~')*        // en ser # un operador ambigu, ~ el transforma d'unari a binari (reflexivitat de l'operand)
-    | '|'
+    : ']' ('~')*        // Although '~' won't affect the result, it is not incorrect writing it
+    | '#' ('~')*        // Being # an ambigous operator, ~ transforms it from unary to binary (refelexivity of the operand)
     | baseBinOp ':' 
     ;
 

@@ -106,11 +106,17 @@ i. 3 + 4
 7 {. 1 2 3 4 5
 1 2 + 3 }. 1 2 3 4 5
 
+sum =: +:
+sum square 1 2 3
+f =: sum @: square
+f 1 2 3
+
 mod2 =: 2 | ]
 eq0 =: 0 = ]
 parell =: eq0 @: mod2
 parell i. 6    NB. resultat: 1 0 1 0 1 0
 
+NB. sum =: +: @: *:
 NB. inc =: 1 + ]
 NB. test =: +/ @: inc @: i.
 NB. test 3    NB. resultat: 6
