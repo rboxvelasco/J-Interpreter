@@ -48,6 +48,7 @@ binOp
 unOp
     : ']' ('~')*        // tot i que '~' no afectarà el resultat, no és incorrecte escriure'l
     | '#' ('~')*        // en ser # un operador ambigu, ~ el transforma d'unari a binari (reflexivitat de l'operand)
+    | '|'
     | baseBinOp ':' 
     ;
 

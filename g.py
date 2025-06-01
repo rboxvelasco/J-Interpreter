@@ -31,6 +31,8 @@ class ExecVisitor(gVisitor):
             'e.': lambda x, y: np.isin(x, y).astype(int),
             '*.': lambda x, y: (self._to_array(x) & self._to_array(y)).astype(int),
             '+.': lambda x, y: (self._to_array(x) | self._to_array(y)).astype(int),
+            '}.': lambda n, y: self._to_array(y)[max(0, self._to_array(n).item()):],
+            '{.': lambda n, y: self._take(n, y), # Not a lambda function since it fulfills with 0's
             '#':  self._copy_op,  # Binary operator, not unary
             '{':  self._index_op,
             '@:': self._compose_op
@@ -109,7 +111,7 @@ class ExecVisitor(gVisitor):
 
         left = self._to_array(left)
         right = self._to_array(right)
-        if op in {',', '{', '#', 'e.'}:  # Operadores que manejan arrays directamente
+        if op in {',', '{', '#', 'e.', '{.', '}.'}:  # Operadores que manejan arrays directamente
             return left, right
         if left.shape != right.shape:
             if left.shape == (1,):
@@ -147,11 +149,11 @@ class ExecVisitor(gVisitor):
         num_flips = len(bin_op_text) - len(base_op)  # Cuenta los '~'
         if base_op not in self.op_map:
             raise ValueError(f"Unsupported operator: {base_op}")
+
         op_func = self.op_map[base_op]  # Obtener la función base
         if num_flips % 2 == 1:  # Si hay un número impar de '~', invertir operandos
-            # Crear una nueva lambda que usa la función original
             return lambda x, y: op_func(y, x)
-        return op_func  # Devolver la función original sin cambios
+        return op_func
 
     # Assignació de funcions: guarda la funció i la seva representació
     def visitAssignacioFuncio(self, ctx: gParser.AssignacioFuncioContext):
@@ -295,11 +297,18 @@ class ExecVisitor(gVisitor):
     def _to_array(self, value):
         return np.atleast_1d(value)
 
-    # Indexation function
+    # Implements the indexation functionality
     def _index_op(self, indices, array):
         if not np.all((indices >= 0) & (indices < len(array))):
             raise ValueError("Index out of bounds")
         return array[indices.astype(int)]
+
+    # Implements the take functionality
+    def _take(self, n, y):
+        y = self._to_array(y)
+        n = self._to_array(n).item()
+        if n > len(y): return np.concatenate((y, np.zeros(n - len(y), dtype=y.dtype)))
+        else:          return y[:n]
 
 
 def process_input(data, executor):
