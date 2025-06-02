@@ -2,7 +2,7 @@
 GRAMMAR = g.g4
 
 # Archivos generados
-GENERATED = gLexer.py gParser.py
+GENERATED = gLexer.py gParser.py gVisitor.py
 
 # Default target
 all: $(GENERATED)

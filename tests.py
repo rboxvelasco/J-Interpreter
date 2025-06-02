@@ -13,6 +13,7 @@ def main():
     # Get the .j files from ./tests directory
     test_dir = 'tests'
     j_files = [f for f in os.listdir(test_dir) if f.endswith('.j')]
+    j_files.sort()
 
     if not j_files:
         print(f"\n{YELLOW}[INFO]{RESET} No .j file found\n")

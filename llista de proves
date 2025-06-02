@@ -11,7 +11,7 @@ Sin embargo ahora mismo ambos imprimen 0 1 4 9
 square1 =: +
 square1 0 1 2 3   NB. result:  0 1 1 1
 square2 =: +:
-square2 0 1 2 3   NB. result: 0 1 4 9
+square2 0 1 2 3   NB. result: 0 2 4 6
 
 
 
