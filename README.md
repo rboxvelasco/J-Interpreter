@@ -18,6 +18,7 @@
    2. [Mandatory Features](#mandatory-features)  
    3. [Additional Features](#additional-features)
 7. [Project Files](#project-files)  
+8. [Test Coverage](#test-coverage)
 
 ---
 
