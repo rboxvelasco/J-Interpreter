@@ -451,3 +451,41 @@ In addition to all the mandatory features, the following J-inspired features are
 - **`tests.py`**: iterates over each `.j` file in `tests/`, runs `g.py` internally, and compares the output to the corresponding `.out` file. Prints a report of passed/failed tests.  
 
 - **`tests/`**: contains sample test cases for verifying all implemented features. Each `.j` file is paired with a `.out` file.
+
+---
+
+## Test Coverage
+
+This project includes a suite of tests to the above mentioned features inspired by the J programming language. The tests are organized into the files:
+
+- **`0-dummy.j`**: covers basic expressions and syntax including:  
+  - Arithmetic operators: `+`, `-`, `*`, `%`, `|`, `^`  
+  - Relational operators: `<`, `>`, `<=`, `>=`, `<>`, `=`  
+  - Identity operator: `]`  
+  - Variable assignment and access  
+  - Function declaration, access, and invocation  
+
+- **`1-operators.j`**: focuses on mmandatory operators and modifiers:  
+  - Flip: `~`  
+  - Binary to unary modifier: `:`  
+  - Indexed access: `{`  
+  - Concatenation: `,`  
+  - Generator: `i.`  
+  - Fold: `/`  
+  - Binary and unary usage of `#`  
+  - Function composition: `@:`  
+
+- **`2-extra.j`**: tests additional features and utilities:  
+  - Boolean operators: `*.`, `+.` , `-.`  
+  - Membership: `e.`  
+  - Take and drop: `}.`, `{.`  
+  - Increment and decrement: `<:`, `>:`  
+  - Reverse: `|.`  
+  - Absolute value: `|`  
+  - Integer generator: `i:`
+
+- **`3-lists.j`**: tests multiple operations on lists.
+
+-  **`4-financial.j`**: computes useful data about financial transactions.
+
+- **`5-physics.j`**: computes the acceleration, velocity and position of a moving body in a certain moment in time.

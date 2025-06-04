@@ -11,6 +11,7 @@ def process_input(data, executor):
     lexer = gLexer(input_stream)
     tokens = CommonTokenStream(lexer)
     parser = gParser(tokens)
+    parser.removeErrorListeners()
     return executor.visit(parser.root())
 
 if __name__ == '__main__':
