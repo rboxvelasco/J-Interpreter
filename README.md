@@ -214,7 +214,7 @@ Below are the main design decisions made during the development of the interpret
 3. **Representing Functions Defined by the User**  
    - **Context**: In J, functions are first-class; they can be assigned to names, passed as arguments, etc.  
    - **Decision**: When the user defines a function, store a **tuple of three elements** in the dictionary:
-     1. A string tag (e.g., `"function"`) to identify the value as a function.
+     1. A string tag (`"function"`) to identify the value as a function.
      2. The **Python object** implementing the function’s behavior (e.g. a lambda function).
      3. The **original source text** written in G, so that if the user queries the function’s value, the interpreter can show the G code.  
    - **Rationale**:  
@@ -233,7 +233,7 @@ Below are the main design decisions made during the development of the interpret
     ```j
     1 2 3 4 5
     ```
-  - **Scalar integer**: written as `_2` for –2 (following J’s notation). Example:
+  - **Scalar integer**: written as `_2` for –2 (following J’s notation).
 
 - **Arithmetic Operators** (all at the same precedence level with right-associative behavior):
   - `+` (addition)
@@ -278,7 +278,8 @@ Below are the main design decisions made during the development of the interpret
 
 1. **Assignment of Scalars and Lists to Variables**  
    - Use `=:` to assign scalar values or lists to variables. Scalars are internally treated as single-element lists.  
-   - **Examples**:  
+   
+     **Examples**:  
 
      ```
      a =: 5
@@ -292,7 +293,8 @@ Below are the main design decisions made during the development of the interpret
      square =: *:
      ```  
    - Once declared, functions can be called by applying them to arguments.  
-   - **Example**:  
+
+     **Example**:  
      ```
      square 3     NB. 9
      ```
@@ -300,7 +302,7 @@ Below are the main design decisions made during the development of the interpret
 3. **Printing Variables**  
    - Variables can be printed to display their values (scalars and lists) or definitions (functions).  
 
-   - **Example**:  
+     **Example**:  
      ```
      a            NB. displays 5
      square       NB. displays *:
@@ -309,7 +311,7 @@ Below are the main design decisions made during the development of the interpret
 4. **List Generation**  
    - `i. n`: Generates a list from `0` to `n-1`.  
 
-   - **Example**:  
+     **Example**:  
      ```
      i. 5         NB. 0 1 2 3 4
      ```
@@ -317,7 +319,7 @@ Below are the main design decisions made during the development of the interpret
 5. **Fold (`/`)**  
    - The `fold` operator (`/`) applies a **binary operator** accumulatively to the elements of a list, from left to right.  
 
-   - **Example**:  
+     **Example**:  
      ```
      +/ 1 2 3 4   NB. 10
      ```
@@ -325,7 +327,7 @@ Below are the main design decisions made during the development of the interpret
 6. **Operators**  
    - **Binary Operators**:  
      - Arithmetic: `+`, `-`, `*`, `%`, `|`, `^`  
-     - Comparisons: `>`, `<`, `<>`, `=`, `<=`, `>=`  
+     - Relational: `>`, `<`, `<>`, `=`, `<=`, `>=`  
      - Concatenation: `,`  
      - Indexing: `{`  
    - **Unary Operators**:  
@@ -334,7 +336,7 @@ Below are the main design decisions made during the development of the interpret
      - `:` : Transforms a binary operator into a unary one.  
      - `~` : Reverses the operand order of a binary operator.  
 
-   - **Examples**:  
+     **Examples**:  
      ```
      +: 4              NB. 8 (equivalent to 4 + 4)
      3 -~ 4            NB. 1 (equivalent to 4 - 3)
@@ -346,6 +348,7 @@ Below are the main design decisions made during the development of the interpret
          + If binary: replicates the right operand attending the left operand.
          + If unary and followed by `~`, it becomes binary generating the missing operand refexively (copies the existing one).
 
+      **Examples**:  
       ```
        # 1 2 3         NB. 3 (unary, returns length of list)
        1 0 1 # 1 2 3   NB. 1 3 (binary, selects elements where left argument is 1)
@@ -354,15 +357,16 @@ Below are the main design decisions made during the development of the interpret
        ```
 
 7. **Function Composition (`@:`)**  
-   - The operator `@:` composes two functions, applying the right function first, then the left.  
-   - **Example**:  
+   - The operator `@:` composes two functions, applying the right function first, then the left one.  
+   
+     **Example**:  
 
      ```
      double =: +:
      square =: *:
      f =: double @: square
 
-     f 3   NB. 18
+     f 3    NB. 18
      ```
 
 ### Additional Features
@@ -456,7 +460,7 @@ In addition to all the mandatory features, the following J-inspired features are
 
 ## Test Coverage
 
-This project includes a suite of tests to the above mentioned features inspired by the J programming language. The tests are organized into the files:
+This project includes a suite of tests to the above mentioned features. The tests are organized into the files:
 
 - **`0-dummy.j`**: covers basic expressions and syntax including:  
   - Arithmetic operators: `+`, `-`, `*`, `%`, `|`, `^`  
@@ -465,7 +469,7 @@ This project includes a suite of tests to the above mentioned features inspired 
   - Variable assignment and access  
   - Function declaration, access, and invocation  
 
-- **`1-operators.j`**: focuses on mmandatory operators and modifiers:  
+- **`1-operators.j`**: focuses on mandatory operators and modifiers:  
   - Flip: `~`  
   - Binary to unary modifier: `:`  
   - Indexed access: `{`  

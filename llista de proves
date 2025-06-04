@@ -1,3 +1,10 @@
+Millorar l'script de tests pq detecti millor les difs
+
+Fer dos maps, un per les variables i un altre per a les funcions
+
+esmentar al radme algo de python i de la llibreria numpy
+
+
 Ahora tengo una mejora, el comportamiento esperado con las siguientes líneas es el siguiente:
 
 square1 =: *
