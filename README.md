@@ -36,7 +36,7 @@ This project implements an interpreter for **G**, a minimal subset of the **J** 
 
 This interpreter covers the essential elements to allow evaluating expressions, defining functions and applying basic operators on lists.
 
-In this `README`, you will find design decisions, descriptions of available features, and practical examples.
+In this `README`, you will find design decisions, descriptions of available features, and practical examples. Since this was developed as an assignment of a university subjetct, it mentiones "mandatory" and "additional" features, according to the work's original requirements.
 
 ---
 
