@@ -190,7 +190,7 @@ Below are the main design decisions made during the development of the interpret
 
 1. **Memory Representation**  
    - **Context**: since it is a functional language, in J (and therefore in G) there is no global mutable state. Users can bind names to values or functions.  
-   - **Decision**: Use a **Python dictionary (`dict`)** where:
+   - **Decision**: Use a **Python dictionary (**`dict`**)** where:
      - **Key**: variable or function name (string).
      - **Value**: the associated content — an integer, a list of integers, or a structure representing a function.  
    - **Rationale**:  
