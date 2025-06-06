@@ -319,7 +319,7 @@ Below are the main design decisions made during the development of the interpret
      i. 5         NB. 0 1 2 3 4
      ```
 
-5. **Fold (`/`)**  
+5. **Fold (**`/`**)**  
    - The `fold` operator (`/`) applies a **binary operator** accumulatively to the elements of a list, from left to right.  
 
      **Example**:  
@@ -359,7 +359,7 @@ Below are the main design decisions made during the development of the interpret
        #~ 1 2 3        NB. 1 2 2 3 3 3 (unary to binary)
        ```
 
-7. **Function Composition (`@:`)**  
+7. **Function Composition (**`@:`**)**  
    - The operator `@:` composes two functions, applying the right function first, then the left one.  
    
      **Example**:  
@@ -391,7 +391,7 @@ In addition to all the mandatory features, the following J-inspired features are
      -. 0 0 1 0        NB. 1 1 0 1
      ```
 
-2. **Take (`{.`) and Drop (`}.`)**  
+2. **Take (**`{.`**) and Drop (**`}.`**)**  
    - `{.` (take) returns the first `n` elements of a list (if `n` is larger than its length, it completes with `0`'s).  
    - `}.` (drop) discards the first `n` elements and returns the remainder.  
    
@@ -401,7 +401,7 @@ In addition to all the mandatory features, the following J-inspired features are
      2 }. 10 20 30 40   NB. 30 40
      ```
 
-3. **Membership (`e.`)**  
+3. **Membership (**`e.`**)**  
    - The operator `e.` checks whether each element of the left-hand list belongs to the right-hand list, returning a list of `1`/`0` (boolean) for each element on the left.  
    
    **Example**:  
@@ -409,7 +409,7 @@ In addition to all the mandatory features, the following J-inspired features are
      1 3 6 e. 1 2 3 4 5   NB. 1 1 0
      ```
 
-4. **Symmetric List Generation (`i: n`)**  
+4. **Symmetric List Generation (**`i: n`**)**  
    - `i: n`: Generates a list from `-n` to `n`.  
    
    **Example**:  
@@ -418,7 +418,7 @@ In addition to all the mandatory features, the following J-inspired features are
      i: 2             NB. _2 _1 0 1 2
      ```
 
-5. **Absolute value (`|`)**
+5. **Absolute value (**`|`**)**
     - Unary operator `|` operates element-wise on lists or on scalars generating their absolute value.
 
     **Example**:
@@ -426,7 +426,7 @@ In addition to all the mandatory features, the following J-inspired features are
     | 0 _1 1 _2 2    NB. 0 1 1 2 2
     ```
 
-6. **Reverse (|.)**
+6. **Reverse (**`|.`**)**
 
     - `|.` returns its reversed argument.
 
@@ -435,7 +435,7 @@ In addition to all the mandatory features, the following J-inspired features are
     |. 30 20 10      NB. 10 20 30
     ```
 
-7. **Increment (`>:`) and Decrement (`<:`)**
+7. **Increment (**`>:`**) and Decrement (**`<:`**)**
    - `>:` (increment) increases element-wise in one unit its argument.  
    - `<:` (decrement) decreases element-wise in one unit its argument.   
    
@@ -449,15 +449,15 @@ In addition to all the mandatory features, the following J-inspired features are
 
 ## Project Files
 
-- **`g.g4`**: Defines the complete grammar for G.  
+- `g.g4`: Defines the complete grammar for G.  
 
-- **`g.py`**: main script that manages console or file input and calls `ExecVisitor.py` delegating the work.
+- `g.py`: main script that manages console or file input and calls `ExecVisitor.py` delegating the work.
 
-- **`ExecVisitor.py`**: gVisitor extension that executes the G statements.
+- `ExecVisitor.py`: gVisitor extension that executes the G statements.
 
-- **`tests.py`**: iterates over each `.j` file in `tests/`, runs `g.py` internally, and compares the output to the corresponding `.out` file. Prints a report of passed/failed tests.  
+- `tests.py`: iterates over each `.j` file in `tests/`, runs `g.py` internally, and compares the output to the corresponding `.out` file. Prints a report of passed/failed tests.  
 
-- **`tests/`**: contains sample test cases for verifying all implemented features. Each `.j` file is paired with a `.out` file.
+- `tests/`: contains sample test cases for verifying all implemented features. Each `.j` file is paired with a `.out` file.
 
 ---
 
@@ -465,14 +465,14 @@ In addition to all the mandatory features, the following J-inspired features are
 
 The project includes a suite of tests to the above mentioned features. The tests are organized into the files:
 
-- **`0-dummy.j`**: covers basic expressions and syntax including:  
+- `0-dummy.j`: covers basic expressions and syntax including:  
   - Arithmetic operators: `+`, `-`, `*`, `%`, `|`, `^`  
   - Relational operators: `<`, `>`, `<=`, `>=`, `<>`, `=`  
   - Identity operator: `]`  
   - Variable assignment and access  
   - Function declaration, access, and invocation  
 
-- **`1-operators.j`**: focuses on mandatory operators and modifiers:  
+- `1-operators.j`: focuses on mandatory operators and modifiers:  
   - Flip: `~`  
   - Binary to unary modifier: `:`  
   - Indexed access: `{`  
@@ -482,7 +482,7 @@ The project includes a suite of tests to the above mentioned features. The tests
   - Binary and unary usage of `#`  
   - Function composition: `@:`  
 
-- **`2-extra.j`**: tests additional features and utilities:  
+- `2-extra.j`: tests additional features and utilities:  
   - Boolean operators: `*.`, `+.` , `-.`  
   - Membership: `e.`  
   - Take and drop: `}.`, `{.`  
@@ -491,8 +491,8 @@ The project includes a suite of tests to the above mentioned features. The tests
   - Absolute value: `|`  
   - Integer generator: `i:`
 
-- **`3-lists.j`**: tests multiple operations on lists.
+- `3-lists.j`: tests multiple operations on lists.
 
--  **`4-financial.j`**: computes useful data about financial transactions.
+-  `4-financial.j`: computes useful data about financial transactions.
 
-- **`5-physics.j`**: computes the acceleration, velocity and position of a moving body in a certain moment in time.
+- `5-physics.j`: computes the acceleration, velocity and position of a moving body in a certain moment in time.
