@@ -11,20 +11,30 @@
    1. [Interactive Mode](#interactive-mode)  
    2. [Evaluating a File](#evaluating-a-file)  
    3. [Running Automated Tests](#running-automated-tests)  
-4. [Detailed Description](#detailed-description)  
-5. [Implementation Decisions](#implementation-decisions)  
-6. [Implemented Functions and Operators](#implemented-functions-and-operators)  
+4. [Implementation Decisions](#implementation-decisions)  
+5. [Implemented Functions and Operators](#implemented-functions-and-operators)  
    1. [Basic Features](#basic-features)  
    2. [Mandatory Features](#mandatory-features)  
    3. [Additional Features](#additional-features)
-7. [Project Files](#project-files)  
-8. [Test Coverage](#test-coverage)
+6. [Project Files](#project-files)  
+7. [Test Coverage](#test-coverage)
 
 ---
 
 ## Description
 
-This project implements an interpreter for **G**, a subset of the **J** programming language. G inherits J’s functional, array-oriented design and focuses on high-level list operations.  
+This project implements an interpreter for **G**, a minimal subset of the **J** programming language. G retains the functional and array-oriented nature of J, with a focus on high-level list operations. Its key features are:
+
+- **Basic types**:
+  - Scalar signed integers (e.g., `42`, `_7`)
+  - Lists of integers (e.g., `1 2 3 4`)
+
+- **Functional paradigm**:
+  - No mutable variables: values are bound immutably to names.
+  - Functions are first-class citizens.
+  - Expressions are evaluated using functional composition and list-based operations.
+
+This interpreter covers the essential elements to allow evaluating expressions, defining functions and applying basic operators on lists.
 
 In this `README`, you will find design decisions, descriptions of available features, and practical examples.
 
@@ -84,9 +94,13 @@ antlr4 --version
 See: https://github.com/antlr/antlr4-tools
 </details>
 
----
+### 2. Install Python Dependencies
 
-### 2. Generate Parser and Lexer
+```bash
+pip install antlr4-python3-runtime
+```
+
+### 3. Generate Parser and Lexer
 
 ```bash
 make
@@ -95,14 +109,6 @@ Or alternatively:
 
 ```bash
 antlr4 -Dlanguage=Python3 -no-listener -visitor g.g4
-```
-
----
-
-### 3. Install Python Dependencies
-
-```bash
-pip install antlr4-python3-runtime
 ```
 ---
 
@@ -178,18 +184,6 @@ python3 tests.py
 
 ---
 
-## Detailed Description
-
-The **G** language is a reduced subset of **J** that focuses on:
-
-- **Basic types**: lists of integers (`1 2 3 4`) and scalar integers (signed).
-
-- **Functional paradigm**: there are no traditional mutable assignments; variables bind to values (lists, scalars, or functions).  
-
-This project covers the essential elements to allow evaluating expressions, defining functions and applying basic operators on lists.
-
----
-
 ## Implementation Decisions
 
 Below are the main design decisions made during the development of the interpreter:
@@ -221,6 +215,14 @@ Below are the main design decisions made during the development of the interpret
    - **Rationale**:  
      - Storing the source text allows printing the original G definition when requested.
      - The tag string simplifies runtime checks (list vs. scalar vs. function).
+
+4. **Using NumPy for List Operations**
+   - **Context**: since G's main type are lists, the interpreter will have to internally treat them constantly. This element-wise behavior is fundamental to the language’s design.
+   - **Decision**: Internally represent lists as NumPy arrays instead of plain Python lists.
+   - **Rationale**:
+     - NumPy naturally supports broadcasting of operations between arrays and scalars (or between arrays of the same shape), aligning perfectly with G's semantics.
+     - Leveraging NumPy allows most arithmetic and comparison operations to be written as direct expressions, without the need for custom iteration logic, boosting code simplicity and conciseness.
+     - NumPy operations are implemented in C and are significantly faster than looping manually over Python lists.
 
 ---
 
@@ -258,7 +260,7 @@ Below are the main design decisions made during the development of the interpret
   1 2 3 + 4 5         NB. length error
   ```
 
-- **Arithmetic Operators** 
+- **Relational Operators** 
   - `>`   (greater than)
   - `<`   (less than)
   - `>=`  (greater than or equal)
@@ -461,7 +463,7 @@ In addition to all the mandatory features, the following J-inspired features are
 
 ## Test Coverage
 
-This project includes a suite of tests to the above mentioned features. The tests are organized into the files:
+The project includes a suite of tests to the above mentioned features. The tests are organized into the files:
 
 - **`0-dummy.j`**: covers basic expressions and syntax including:  
   - Arithmetic operators: `+`, `-`, `*`, `%`, `|`, `^`  
