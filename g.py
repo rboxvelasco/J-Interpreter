@@ -32,5 +32,4 @@ if __name__ == '__main__':
                 print("\nExiting...")
                 break
             except Exception as e:
-                # Imprimir en rojo usando códigos ANSI
                 print(f"\033[91mError: {e}\033[0m")

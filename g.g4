@@ -15,6 +15,7 @@ expr
     : unaryOp expr              # unaryOperation
     | atom (binOp atom)*        # binaryOperation
     | binOp '/' atom            # fold
+    | binOp '\\' atom            # scan
     ;
 
 atom
@@ -27,6 +28,7 @@ atom
     | ID expr           # functionEval
     | binToUnOp         # derivedVerbAtom
     | binOp '/'         # foldFunction
+    | binOp '\\'         # scanFunction
     | ('i.' | 'i:') expr  # generator
     ;
 

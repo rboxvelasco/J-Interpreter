@@ -15,6 +15,11 @@ NB. Take and Drop.
 
 1 2 + 3 }. 1 2 3 4 5
 
+NB. Scan
++\ 1 2 3 4
+-\ 7 5 2 1
+-~\ 7 5 2 1
+
 NB. Increment and Decrement.
 >: 10 20 30
 <: (i. 5) + 2

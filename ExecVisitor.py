@@ -127,13 +127,26 @@ class ExecVisitor(gVisitor):
         bin_op_text = ctx.binOp().getText()
         array = self._to_array(self.visit(ctx.atom()))
         
-        if array.size == 0:
-            raise ValueError("Fold on empty array")
-        else:
-            array_list = [np.array([x]) for x in array]
+        if array.size == 0: raise ValueError("Fold on empty array")
+        else: array_list = [np.array([x]) for x in array]
         
         op_func = self._get_op_func(bin_op_text)
         return reduce(op_func, array_list)
+
+    # Returns a function tuple
+    def visitScanFunction(self, ctx: gParser.ScanFunctionContext):
+        bin_op_text = ctx.binOp().getText()
+        op_func = self._get_op_func(bin_op_text)
+        func = lambda y: self._apply_scan(op_func, y)
+        func_repr = f"{bin_op_text}\\"
+        return ('function', func, func_repr)
+
+    # Evaluates the scan expression
+    def visitScan(self, ctx: gParser.ScanContext):
+        bin_op_text = ctx.binOp().getText()
+        array = self._to_array(self.visit(ctx.atom()))
+        op_func = self._get_op_func(bin_op_text)
+        return self._apply_scan(op_func, array)
 
     # Evaluates a declared function
     def visitFunctionEval(self, ctx: gParser.FunctionEvalContext):
@@ -337,6 +350,17 @@ class ExecVisitor(gVisitor):
         composed_func = lambda y: left_func(right_func(y))
         composed_repr = f"{left_repr} @: {right_repr}"
         return ('function', composed_func, composed_repr)
+
+    # Implements the scan function
+    def _apply_scan(self, op_func, array):
+        array = self._to_array(array)
+        if array.ndim != 1: raise ValueError("Scan only supported for 1D arrays")
+        if array.size == 0: return np.array([])
+        result = [array[0]]
+        for i in range(1, len(array)):
+            next_val = op_func(result[-1], array[i])
+            result.append(next_val)
+        return np.array(result)
 
     # Implements replication functionality
     def _copy_op(self, left, right):
