@@ -496,6 +496,7 @@ The project includes a suite of tests to the above mentioned features. The tests
   - Boolean operators: `*.`, `+.` , `-.`  
   - Membership: `e.`  
   - Take and drop: `}.`, `{.`  
+  - Scan: `\`
   - Increment and decrement: `<:`, `>:`  
   - Reverse: `|.`  
   - Absolute value: `|`  
