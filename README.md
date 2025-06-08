@@ -445,6 +445,16 @@ In addition to all the mandatory features, the following J-inspired features are
      <: 1 2 3         NB. 0 1 2
      ```
 
+8. **Scan (**`\`**)**
+
+   - `\` receives an operator and executes it along all the list returning another list woth the accumulated intermediate results.
+
+    **Examples**:  
+     ```
+     +\ 1 2 3 4       NB. 1 3 6 10
+     *\ 1 2 3 4       NB. 1 2 6 24
+     ```
+
 ---
 
 ## Project Files
