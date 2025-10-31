@@ -4,9 +4,6 @@
 
 1. [Description](#description)  
 2. [Setup Instructions](#setup-instructions)  
-   1. [Prerequisites](#1-prerequisites)  
-   2. [Install Python Dependencies](#2-install-python-dependencies)
-   3. [Generate Parser and Lexer](#3-generate-parser-and-lexer)  
 3. [How to Run the Project](#how-to-run-the-project)  
    1. [Interactive Mode](#interactive-mode)  
    2. [Evaluating a File](#evaluating-a-file)  
@@ -28,7 +25,6 @@ This project implements an interpreter for **G**, a minimal subset of the **J** 
 - **Basic types**:
   - Scalar signed integers (e.g., `42`, `_7`)
   - Lists of integers (e.g., `1 2 3 4`)
-
 - **Functional paradigm**:
   - No mutable variables: values are bound immutably to names.
   - Functions are first-class citizens.
@@ -124,21 +120,11 @@ To start the interpreter in interactive mode (reading line by line from the cons
 python3 g.py
 ```
 
-- The prompt will display:
+The prompt will display:
 
-  ```
-  >
-  ```
-- You can type G expressions directly and results will be shown, for example:
-
-  ```text
-  > 1 2 3 + 4 5 6
-  5 7 9
-  > x =: 10
-  > x * 2
-  20
-  ```
-- To exit interactive mode, press `Ctrl+D` or `Ctrl+C`.
+```
+>
+```
 
 ### Evaluating a Code File
 
@@ -147,23 +133,6 @@ If you have a file with extension `.j` containing G code, you can pass it as an 
 ```bash
 python3 g.py program.j
 ```
-
-- The interpreter will read and execute each statement in the file, printing results as needed.
-- Example `program.j`:
-
-  ```j
-  x =: 1 2 3 4 5
-  y =: 5 + x
-  y
-  ```
-  Running:
-  ```bash
-  python3 g.py program.j
-  ```
-  Output:
-  ```
-  6 7 8 9 10
-  ```
 You can easily redirect your output to a file `file.out` executing:
 
 ```bash
@@ -178,9 +147,7 @@ python3 g.py program.j > file.out
 python3 tests.py
 ```
 
-- `tests.py` will iterate over each `.j` file in `tests/`, run `g.py` internally, and compare the output to the `.out` file.
-
-- The script will inform you if the test successes or fails and, in case it fails, where has failed.
+`tests.py` will iterate over each `.j` file in `tests/`, run `g.py` internally, and compare the output to the `.out` file. The script will inform you if the test successes or fails and, in case it fails, where has failed.
 
 ---
 
