@@ -199,7 +199,6 @@ Below are the main design decisions made during the development of the interpret
 
 - **Base Type**:  
   - **List of integers**: represented as numpy arrays. Example in G:  
-
     ```j
     1 2 3 4 5
     ```
@@ -237,10 +236,10 @@ Below are the main design decisions made during the development of the interpret
 
   The output of a relational operator is `1` (true) or `0` (false).
 
-  **Example**:
+  **Examples**:
   ```j
   1 2 3 > 2     NB. 0 0 1
-  4 < 5 3 2     NB. 1 0 0 0
+  4 < 5 3 2     NB. 1 0 0
   3 = 3 4 3     NB. 1 0 1
   ```
 
@@ -248,9 +247,7 @@ Below are the main design decisions made during the development of the interpret
 
 1. **Assignment of Scalars and Lists to Variables**  
    - Use `=:` to assign scalar values or lists to variables. Scalars are internally treated as single-element lists.  
-   
      **Examples**:  
-
      ```
      a =: 5
      b =: 1 2 3
@@ -258,12 +255,10 @@ Below are the main design decisions made during the development of the interpret
 
 2. **Function Declaration and Calling**  
    - Declare functions by assigning operators to variables:  
-
      ```
      square =: *:
      ```  
    - Once declared, functions can be called by applying them to arguments.  
-
      **Example**:  
      ```
      square 3     NB. 9
@@ -271,16 +266,14 @@ Below are the main design decisions made during the development of the interpret
 
 3. **Printing Variables**  
    - Variables can be printed to display their values (scalars and lists) or definitions (functions).  
-
      **Example**:  
      ```
-     a            NB. displays 5
-     square       NB. displays *:
+     a            NB. 5
+     square       NB. *:
      ```
 
 4. **List Generation**  
    - `i. n`: Generates a list from `0` to `n-1`.  
-
      **Example**:  
      ```
      i. 5         NB. 0 1 2 3 4
@@ -288,7 +281,6 @@ Below are the main design decisions made during the development of the interpret
 
 5. **Fold (**`/`**)**  
    - The `fold` operator (`/`) applies a **binary operator** accumulatively to the elements of a list, from left to right.  
-
      **Example**:  
      ```
      +/ 1 2 3 4   NB. 10
@@ -328,9 +320,7 @@ Below are the main design decisions made during the development of the interpret
 
 7. **Function Composition (**`@:`**)**  
    - The operator `@:` composes two functions, applying the right function first, then the left one.  
-   
      **Example**:  
-
      ```
      double =: +:
      square =: *:
@@ -347,11 +337,9 @@ In addition to all the mandatory features, the following J-inspired features are
    - `+.` (logical OR)  
    - `*.` (logical AND)  
    - `-.` (logical NOT)
-   
+
    These operate element-wise on lists of `0`/`1` or between scalars `0`/`1`.  
-
    **Example**:
-
      ```
      0 +. 1            NB. 1
      1 0 1 *. 1 1 0    NB. 1 0 0
@@ -380,7 +368,6 @@ In addition to all the mandatory features, the following J-inspired features are
    - `i: n`: Generates a list from `-n` to `n`.  
    
    **Example**:  
-
      ```
      i: 2             NB. _2 _1 0 1 2
      ```
@@ -394,7 +381,6 @@ In addition to all the mandatory features, the following J-inspired features are
     ```
 
 6. **Reverse (**`|.`**)**
-
     - `|.` returns its reversed argument.
 
     **Example**:

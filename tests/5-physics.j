@@ -1,4 +1,4 @@
-NB. This test alculates average acceleration, projects future velocity, and estimates displacement from velocity data after t time.
+NB. This test calculates average acceleration, projects future velocity, and estimates displacement from velocity data after t time.
 
 vels =: 0 2 4 6 8 10       NB. Velocities recorded every 1 second
 dt   =: 1                  NB. Time interval between velocity measurements (1s)
